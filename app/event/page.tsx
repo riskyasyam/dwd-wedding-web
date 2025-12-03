@@ -114,7 +114,7 @@ export default function EventPage() {
                 </div>
 
                 {/* BUTTON */}
-                <button className="mt-4 px-5 py-2 rounded-lg bg-[#D7B0EC] text-white font-semibold hover:bg-[#caa3e3] transition">
+                <button className="mt-4 px-5 py-2 rounded-lg bg-[#D3A0D2] text-white font-semibold hover:bg-[#caa3e3] transition">
                   Lihat Selengkapnya
                 </button>
               </div>

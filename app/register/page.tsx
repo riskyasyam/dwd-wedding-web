@@ -49,10 +49,21 @@ export default function RegisterPage() {
     setErrors({});
 
     try {
-      const response = await authService.register(formData);
-      // Redirect to customer dashboard after registration (new users are customers by default)
-      router.push('/customer/dashboard');
+      // Add terms field to the request
+      const registrationData = {
+        ...formData,
+        terms: agreeToTerms, // Backend expects 'terms' field
+      };
+      
+      await authService.register(registrationData);
+      
+      // Show success message
+      alert('Registration successful! Please login to continue.');
+      
+      // Redirect to login page
+      router.push('/login');
     } catch (error: any) {
+      console.error('Registration error:', error);
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
       } else {
