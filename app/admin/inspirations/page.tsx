@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation';
 import { authService, User } from '@/lib/auth';
 import { inspirationService, Inspiration } from '@/lib/crudService';
 import { getImageUrl } from '@/lib/axios';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FaPlus, FaEdit, FaTrash, FaSearch, FaHeart, FaTimes } from 'react-icons/fa';
 import AdminSidebar from '@/components/layout/AdminSidebar';
+// Menggunakan react-icons/fa
+import { FaPlus, FaEdit, FaTrash, FaSearch, FaHeart, FaTimes, FaMapMarkerAlt, FaPalette, FaCheck } from 'react-icons/fa';
 
 export default function InspirationsPage() {
   const router = useRouter();
@@ -23,6 +22,7 @@ export default function InspirationsPage() {
   const [editingInspiration, setEditingInspiration] = useState<Inspiration | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  
   const [formData, setFormData] = useState({
     title: '',
     colors: [] as string[],
@@ -101,7 +101,6 @@ export default function InspirationsPage() {
     try {
       const submitFormData = new FormData();
       submitFormData.append('title', formData.title);
-      // Append colors array
       formData.colors.forEach(color => {
         submitFormData.append('colors[]', color);
       });
@@ -181,7 +180,6 @@ export default function InspirationsPage() {
       const file = e.target.files[0];
       setSelectedImage(file);
       
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -190,10 +188,34 @@ export default function InspirationsPage() {
     }
   };
 
+  // --- CUSTOM UI COMPONENTS ---
+
+  const GradientButton = ({ children, onClick, className = '', type = 'button', variant = 'primary' }: any) => {
+    const baseStyle = "px-4 py-2 rounded-lg font-medium transition-all duration-200 transform hover:-translate-y-0.5 shadow-sm hover:shadow-md flex items-center justify-center";
+    const variants = {
+      primary: "bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 border-none",
+      secondary: "bg-white text-purple-600 border-2 border-purple-100 hover:border-purple-300 hover:bg-purple-50",
+      danger: "bg-white text-red-500 border-2 border-red-100 hover:border-red-300 hover:bg-red-50"
+    };
+    
+    return (
+      <button 
+        type={type} 
+        onClick={onClick} 
+        className={`${baseStyle} ${variants[variant as keyof typeof variants]} ${className}`}
+      >
+        {children}
+      </button>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-gray-600">Loading...</p>
+        <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+           <p className="text-gray-600 mt-4 font-medium">Loading Inspirations...</p>
+        </div>
       </div>
     );
   }
@@ -204,238 +226,265 @@ export default function InspirationsPage() {
     <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar user={user} />
       
-      <div className="flex-1 ml-64">
-        <div className="p-6">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Inspirations</h1>
-            <p className="text-gray-600">Manage inspiration gallery</p>
-          </div>
-
-          {/* Filters */}
-          <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search inspirations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <select
-              value={filterColor}
-              onChange={(e) => setFilterColor(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Colors</option>
-              {colorOptions.map(color => (
-                <option key={color.code} value={color.code}>{color.name}</option>
-              ))}
-            </select>
-            <Button onClick={() => setShowModal(true)} className="bg-blue-600 hover:bg-blue-700">
-              <FaPlus className="mr-2" /> Add Inspiration
-            </Button>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              <p className="font-semibold">Error:</p>
-              <p>{error}</p>
-            </div>
-          )}
-
-          {/* Inspirations Grid */}
-          {loading ? (
-            <div className="text-center py-12">Loading...</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {inspirations.map((inspiration) => (
-                <Card key={inspiration.id} className="overflow-hidden">
-                  <div className="relative h-64 bg-gray-200">
-                    <img
-                      src={getImageUrl(inspiration.image)}
-                      alt={inspiration.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full flex items-center gap-1 text-red-500">
-                      <FaHeart size={14} />
-                      <span className="text-xs font-semibold">{inspiration.liked_count}</span>
+      <div className="flex-1 ml-64 p-8">
+        {/* Header Section */}
+        <div className="mb-8">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h1 className="text-3xl font-bold bg-clip-text text-black">
+                        Inspiration Gallery
+                        </h1>
+                        <p className="text-gray-500 mt-1">Manage wedding ideas and color palettes.</p>
                     </div>
-                  </div>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{inspiration.title}</CardTitle>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {inspiration.colors && inspiration.colors.map((colorCode, index) => (
-                        <span 
-                          key={index}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs border border-gray-300"
-                        >
-                          <span 
-                            className="w-3 h-3 rounded-full border border-gray-300" 
-                            style={{ backgroundColor: colorCode }}
-                          />
-                          {colorOptions.find(c => c.code === colorCode)?.name || colorCode}
+                    <div className="hidden md:block">
+                        <span className="bg-purple-50 text-purple-700 border border-purple-100 px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
+                             Total: {inspirations.length} Items
                         </span>
-                      ))}
-                      <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                        {inspiration.location}
-                      </span>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleEdit(inspiration)}
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                      >
-                        <FaEdit className="mr-1" /> Edit
-                      </Button>
-                      <Button
-                        onClick={() => handleDelete(inspiration.id)}
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <FaTrash />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {inspirations.length === 0 && !loading && (
-            <div className="text-center py-12 text-gray-500">
-              No inspirations found
-            </div>
-          )}
-
-          {/* Add/Edit Modal */}
-          {showModal && (
-            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto my-8 p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold">
-                    {editingInspiration ? 'Edit Inspiration' : 'Add Inspiration'}
-                  </h2>
-                  <button onClick={() => { setShowModal(false); resetForm(); }}>
-                    <FaTimes className="text-gray-500 hover:text-gray-700" />
-                  </button>
                 </div>
 
-                <form onSubmit={handleSubmit}>
-                  <div className="space-y-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Title *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., Elegant White Beach Wedding"
-                        required
-                        maxLength={255}
-                      />
+                {/* Filters & Actions */}
+                <div className="flex gap-4">
+                    <div className="relative flex-1">
+                        <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search inspirations..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        />
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Colors * (Select one or more)
-                      </label>
-                      <div className="grid grid-cols-5 gap-3">
-                        {colorOptions.map(color => (
-                          <button
-                            key={color.code}
-                            type="button"
-                            onClick={() => toggleColor(color.code)}
-                            className="flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all hover:border-blue-300"
-                            style={{
-                              borderColor: formData.colors.includes(color.code) ? '#3B82F6' : '#E5E7EB',
-                              backgroundColor: formData.colors.includes(color.code) ? '#EFF6FF' : 'white'
-                            }}
-                            title={color.name}
-                          >
-                            <div
-                              className="w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm"
-                              style={{ backgroundColor: color.code }}
-                            />
-                            <span className="text-xs text-gray-600 text-center leading-tight">
-                              {color.name}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                      {formData.colors.length === 0 && (
-                        <p className="text-sm text-red-500 mt-1">Please select at least one color</p>
-                      )}
+                    <div className="w-64">
+                        <select
+                            value={filterColor}
+                            onChange={(e) => setFilterColor(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                            <option value="">All Colors</option>
+                            {colorOptions.map(color => (
+                                <option key={color.code} value={color.code}>{color.name}</option>
+                            ))}
+                        </select>
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Location *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.location}
-                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., Indonesia, Eropa"
-                        required
-                        maxLength={255}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Image * {editingInspiration && '(Leave empty to keep current image)'}
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required={!editingInspiration}
-                      />
-                      {imagePreview && (
-                        <div className="mt-3">
-                          <img
-                            src={imagePreview}
-                            alt="Preview"
-                            className="w-full h-48 object-cover rounded-lg"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        setShowModal(false);
-                        resetForm();
-                      }}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
-                      {editingInspiration ? 'Update' : 'Create'}
-                    </Button>
-                  </div>
-                </form>
-              </div>
+                    <GradientButton onClick={() => setShowModal(true)}>
+                        <FaPlus className="mr-2" /> Add Inspiration
+                    </GradientButton>
+                </div>
             </div>
-          )}
         </div>
+
+        {/* Error Message */}
+        {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 shadow-sm flex items-center">
+             <FaTimes className="mr-2"/>
+             <div>
+                <p className="font-semibold">Error:</p>
+                <p>{error}</p>
+             </div>
+            </div>
+        )}
+
+        {/* Inspirations Grid */}
+        {loading ? (
+            <div className="flex justify-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+            </div>
+        ) : inspirations.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-200">
+                <div className="bg-gray-100 inline-flex p-4 rounded-full mb-4">
+                    <FaPalette className="text-gray-400 text-2xl" />
+                </div>
+                <p className="text-gray-600 text-lg font-medium">No inspirations found</p>
+                <p className="text-gray-400 text-sm">Add new ideas to the gallery.</p>
+            </div>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {inspirations.map((inspiration) => (
+                    <div key={inspiration.id} className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group flex flex-col h-full">
+                        {/* Image Section */}
+                        <div className="relative h-64 bg-gray-100 overflow-hidden">
+                            <img
+                                src={getImageUrl(inspiration.image)}
+                                alt={inspiration.title}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            />
+                            <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1 text-pink-500 shadow-sm">
+                                <FaHeart size={12} />
+                                <span className="text-xs font-bold">{inspiration.liked_count}</span>
+                            </div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                                <span className="text-white text-sm font-medium flex items-center gap-2">
+                                    <FaMapMarkerAlt className="text-pink-400" /> {inspiration.location}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="p-4 flex-1 flex flex-col">
+                            <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-1" title={inspiration.title}>
+                                {inspiration.title}
+                            </h3>
+                            
+                            <div className="flex flex-wrap gap-2 mb-4 flex-1 content-start">
+                                {inspiration.colors && inspiration.colors.map((colorCode, index) => (
+                                    <div 
+                                        key={index}
+                                        className="group/color relative"
+                                        title={colorOptions.find(c => c.code === colorCode)?.name || colorCode}
+                                    >
+                                        <div 
+                                            className="w-6 h-6 rounded-full border border-gray-200 shadow-sm ring-1 ring-transparent group-hover/color:ring-gray-300 transition-all" 
+                                            style={{ backgroundColor: colorCode }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-2 pt-3 border-t border-gray-100 mt-auto">
+                                <GradientButton variant="secondary" onClick={() => handleEdit(inspiration)} className="flex-1 text-xs py-1.5">
+                                    <FaEdit className="mr-1" /> Edit
+                                </GradientButton>
+                                <GradientButton variant="danger" onClick={() => handleDelete(inspiration.id)} className="w-8 px-0 flex items-center justify-center">
+                                    <FaTrash size={12} />
+                                </GradientButton>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )}
+
+        {/* Add/Edit Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
+            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-8">
+                <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                    <h2 className="text-2xl font-bold text-gray-800">
+                        {editingInspiration ? 'Edit Inspiration' : 'Add New Inspiration'}
+                    </h2>
+                    <button onClick={() => { setShowModal(false); resetForm(); }} className="text-gray-400 hover:text-red-500 transition-colors">
+                        <FaTimes size={24} />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Title *</label>
+                        <input
+                            type="text"
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            placeholder="e.g., Elegant White Beach Wedding"
+                            required
+                            maxLength={255}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Location *</label>
+                        <div className="relative">
+                            <FaMapMarkerAlt className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="text"
+                                value={formData.location}
+                                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                placeholder="e.g., Bali, Indonesia"
+                                required
+                                maxLength={255}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
+                        <label className="block text-sm font-bold text-gray-700 mb-3">
+                            Primary Colors * <span className="text-gray-400 font-normal text-xs">(Select one or more)</span>
+                        </label>
+                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                            {colorOptions.map(color => {
+                                const isSelected = formData.colors.includes(color.code);
+                                return (
+                                    <button
+                                        key={color.code}
+                                        type="button"
+                                        onClick={() => toggleColor(color.code)}
+                                        className={`flex flex-col items-center gap-2 p-2 rounded-xl border transition-all duration-200 ${
+                                            isSelected 
+                                            ? 'border-purple-500 bg-purple-50 shadow-sm transform scale-105' 
+                                            : 'border-transparent hover:bg-gray-100 hover:border-gray-200'
+                                        }`}
+                                    >
+                                        <div className="relative">
+                                            <div 
+                                                className="w-8 h-8 rounded-full border border-gray-200 shadow-sm" 
+                                                style={{ backgroundColor: color.code }}
+                                            />
+                                            {isSelected && (
+                                                <div className="absolute -top-1 -right-1 bg-purple-600 text-white rounded-full p-0.5 shadow-sm border border-white">
+                                                    <FaCheck size={8} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className={`text-[10px] font-medium text-center leading-tight ${isSelected ? 'text-purple-700' : 'text-gray-500'}`}>
+                                            {color.name}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {formData.colors.length === 0 && (
+                            <p className="text-xs text-red-500 mt-2 font-medium">Please select at least one color palette.</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Inspiration Image * <span className="font-normal text-gray-400">{editingInspiration && '(Leave empty to keep current)'}</span>
+                        </label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100"
+                                required={!editingInspiration}
+                            />
+                        </div>
+                        {imagePreview && (
+                            <div className="mt-4 relative rounded-xl overflow-hidden shadow-md border border-gray-200 w-full h-48">
+                                <img
+                                    src={imagePreview}
+                                    alt="Preview"
+                                    className="w-full h-full object-cover"
+                                />
+                                <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs">Preview</div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-4 pt-4 border-t border-gray-100">
+                        <GradientButton
+                            variant="secondary"
+                            onClick={() => {
+                                setShowModal(false);
+                                resetForm();
+                            }}
+                            className="flex-1"
+                        >
+                            Cancel
+                        </GradientButton>
+                        <GradientButton type="submit" className="flex-1">
+                            {editingInspiration ? 'Save Changes' : 'Create Inspiration'}
+                        </GradientButton>
+                    </div>
+                </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { authService } from '@/lib/auth';
-import { FaFacebook, FaGoogle, FaApple, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaFacebook, FaGoogle, FaApple, FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa'; // Tambahkan FaArrowLeft
 
 export default function LoginPage() {
   const router = useRouter();
@@ -59,8 +59,21 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-8">
-        <div className="w-full max-w-md">
+      {/* Tambahkan class 'relative' di sini agar tombol back bisa di-position absolute */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-8 relative">
+        
+        {/* --- Tombol Back to Home --- */}
+        <div className="absolute top-6 left-6 md:top-8 md:left-8">
+          <Link 
+            href="/" 
+            className="flex items-center text-gray-500 hover:text-[#515DEF] transition-colors group"
+          >
+            <FaArrowLeft className="mr-2 group-hover:-translate-x-1 transition-transform" size={14} />
+            <span className="text-sm font-medium">Back to Home</span>
+          </Link>
+        </div>
+
+        <div className="w-full max-w-md mt-10 lg:mt-0">
           {/* Logo */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-[#313131]" style={{ fontFamily: 'var(--font-red-hat-display)' }}>

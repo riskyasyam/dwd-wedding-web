@@ -56,13 +56,13 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             <Link
               href="/register"
-              className="px-6 py-2 bg-[#F2F2F7] border border-[#9A82DB] rounded-lg text-gray-900 font-medium hover:bg-gray-100 transition-colors"
+              className="text-sm px-6 py-2 bg-[#F2F2F7] border border-[#9A82DB] rounded-lg text-gray-900 font-medium hover:bg-gray-100 transition-colors"
             >
               Register
             </Link>
             <Link
               href="/login"
-              className="px-6 py-2 bg-[#F2F2F7] border border-[#9A82DB] rounded-lg text-gray-900 font-medium hover:bg-gray-100 transition-colors"
+              className="text-sm px-6 py-2 bg-[#F2F2F7] border border-[#9A82DB] rounded-lg text-gray-900 font-medium hover:bg-gray-100 transition-colors"
             >
               Login
             </Link>

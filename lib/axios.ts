@@ -23,9 +23,21 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   response => response,
   error => {
+    // Log error for debugging
+    console.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message,
+      data: error.response?.data
+    });
+
+    // Only redirect to login if on admin/customer protected routes
     if (error.response?.status === 401) {
-      // Clear token on unauthorized
-      if (typeof window !== 'undefined') {
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+      const isProtectedRoute = currentPath.startsWith('/admin') || currentPath.startsWith('/customer');
+      
+      if (isProtectedRoute && typeof window !== 'undefined') {
         localStorage.removeItem('token');
         window.location.href = '/login';
       }

@@ -1,232 +1,120 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import VendorSection from './VendorSection';
+import api, { getImageUrl } from '@/lib/axios';
 
-// Photography vendors
-const photographyVendors = [
-  {
-    id: 1,
-    name: 'IMAGENIC',
-    image: '/images/fotografi.png',
-    rating: 4.5,
-    category: 'Recommended Photography',
-  },
-  {
-    id: 2,
-    name: 'ROTROF PHT',
-    image: '/images/fotografi.png',
-    rating: 4.8,
-    category: 'Favorite Photography',
-  },
-  {
-    id: 3,
-    name: 'POTOMOTO',
-    image: '/images/fotografi.png',
-    rating: 4.7,
-    category: 'Recommended Photography',
-  },
-  {
-    id: 4,
-    name: 'SECREFCY',
-    image: '/images/fotografi.png',
-    rating: 4.9,
-    category: 'Recommended Photography',
-  },
-  {
-    id: 5,
-    name: 'TALKPICT TO',
-    image: '/images/fotografi.png',
-    rating: 4.6,
-    category: 'New Photography',
-  },
-];
-
-// Videography vendors
-const videographyVendors = [
-  {
-    id: 1,
-    name: 'OSKY STUDIO',
-    image: '/images/videografi.png',
-    rating: 4.8,
-    category: 'Recommended Videography',
-  },
-  {
-    id: 2,
-    name: 'CERAH DIGITAL',
-    image: '/images/videografi.png',
-    rating: 4.7,
-    category: 'New Videography',
-  },
-  {
-    id: 3,
-    name: 'KAMERA POHON',
-    image: '/images/videografi.png',
-    rating: 4.9,
-    category: 'Favorite Videography',
-  },
-  {
-    id: 4,
-    name: 'VML PROJECTS',
-    image: '/images/videografi.png',
-    rating: 4.6,
-    category: 'Recommended Videography',
-  },
-  {
-    id: 5,
-    name: 'PINEAPPLE VIDEOWORK',
-    image: '/images/videografi.png',
-    rating: 4.8,
-    category: 'Favorite Videography',
-  },
-];
-
-// Makeup vendors
-const makeupVendors = [
-  {
-    id: 1,
-    name: 'DEVY MUA',
-    image: '/images/makeup.png',
-    rating: 4.9,
-    category: 'Favorite Make Up',
-  },
-  {
-    id: 2,
-    name: 'NURADILLA MUA',
-    image: '/images/makeup.png',
-    rating: 4.7,
-    category: 'Favorite Photography',
-  },
-  {
-    id: 3,
-    name: 'WULAN MUA',
-    image: '/images/makeup.png',
-    rating: 4.8,
-    category: 'New Make Up',
-  },
-  {
-    id: 4,
-    name: 'IMA MUA',
-    image: '/images/makeup.png',
-    rating: 4.6,
-    category: 'Recommended Make Up',
-  },
-  {
-    id: 5,
-    name: 'YOBEL MUA',
-    image: '/images/makeup.png',
-    rating: 4.9,
-    category: 'New Make Up',
-  },
-];
-
-// Attire vendors
-const attireVendors = [
-  {
-    id: 1,
-    name: 'SUNDARI',
-    image: '/images/attire.png',
-    rating: 4.7,
-    category: 'New Attire',
-  },
-  {
-    id: 2,
-    name: 'IVORY BRIDAL',
-    image: '/images/attire.png',
-    rating: 4.8,
-    category: 'Recommended Attire',
-  },
-  {
-    id: 3,
-    name: 'DUSERA',
-    image: '/images/attire.png',
-    rating: 4.9,
-    category: 'Favorite Attire',
-  },
-  {
-    id: 4,
-    name: 'RENTIQUE',
-    image: '/images/attire.png',
-    rating: 4.6,
-    category: 'Favorite Attire',
-  },
-  {
-    id: 5,
-    name: 'STYLE THEORY',
-    image: '/images/attire.png',
-    rating: 4.8,
-    category: 'New Attire',
-  },
-];
-
-// Entertainment vendors
-const entertainmentVendors = [
-  {
-    id: 1,
-    name: 'JAKARTA EVENT GROUP',
-    image: '/images/entertainment.png',
-    rating: 4.8,
-    category: 'Recommended Entertainment',
-  },
-  {
-    id: 2,
-    name: 'SWEET MEMORY ENT',
-    image: '/images/entertainment.png',
-    rating: 4.7,
-    category: 'New Entertainment',
-  },
-  {
-    id: 3,
-    name: 'THREE 5',
-    image: '/images/entertainment.png',
-    rating: 4.9,
-    category: 'Recommended Entertainment',
-  },
-  {
-    id: 4,
-    name: 'ARJUNA',
-    image: '/images/entertainment.png',
-    rating: 4.6,
-    category: 'Favorite Entertainment',
-  },
-  {
-    id: 5,
-    name: 'VOYAGE',
-    image: '/images/entertainment.png',
-    rating: 4.8,
-    category: 'Recommended Entertainment',
-  },
-];
+interface Vendor {
+  id: number;
+  name: string;
+  category: string;
+  images?: { id: number; image: string }[];
+  rating?: number;
+}
 
 export default function VendorSectionsGroup() {
+  const [photographyVendors, setPhotographyVendors] = useState<Vendor[]>([]);
+  const [videographyVendors, setVideographyVendors] = useState<Vendor[]>([]);
+  const [makeupVendors, setMakeupVendors] = useState<Vendor[]>([]);
+  const [attireVendors, setAttireVendors] = useState<Vendor[]>([]);
+  const [entertainmentVendors, setEntertainmentVendors] = useState<Vendor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVendorsByCategory = async () => {
+      try {
+        // Fetch all categories in parallel
+        const [photo, video, makeup, attire, entertainment] = await Promise.all([
+          api.get('/public/vendors', { params: { category: 'Fotografi', per_page: 10 } }),
+          api.get('/public/vendors', { params: { category: 'Videografi', per_page: 10 } }),
+          api.get('/public/vendors', { params: { category: 'Make up / Hair & Hijab', per_page: 10 } }),
+          api.get('/public/vendors', { params: { category: 'Attire', per_page: 10 } }),
+          api.get('/public/vendors', { params: { category: 'Entertainment (Musik)', per_page: 10 } })
+        ]);
+
+        setPhotographyVendors(photo.data.data?.data || photo.data.data || []);
+        setVideographyVendors(video.data.data?.data || video.data.data || []);
+        setMakeupVendors(makeup.data.data?.data || makeup.data.data || []);
+        setAttireVendors(attire.data.data?.data || attire.data.data || []);
+        setEntertainmentVendors(entertainment.data.data?.data || entertainment.data.data || []);
+      } catch (error: any) {
+        console.error('Failed to fetch vendors:', {
+          status: error.response?.status,
+          message: error.response?.data?.message || error.message,
+          url: error.config?.url
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVendorsByCategory();
+  }, []);
+
+  // Transform vendor data to match VendorSection expected format
+  const transformVendors = (vendors: Vendor[], categoryLabel: string) => {
+    return vendors.map(vendor => ({
+      id: vendor.id,
+      name: vendor.name.toUpperCase(),
+      image: vendor.images && vendor.images.length > 0 
+        ? getImageUrl(vendor.images[0].image)
+        : '/images/placeholder-vendor.png',
+      rating: vendor.rating || 0,
+      category: categoryLabel
+    }));
+  };
+
+  if (loading) {
+    return (
+      <section className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">Loading vendors...</div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <div className="bg-white">
-      <VendorSection
-        title="Fotografi"
-        description="Our trusted photography partners who capture your moments beautifully"
-        vendors={photographyVendors}
-      />
+    <div className="space-y-12">
+      {photographyVendors.length > 0 && (
+        <VendorSection
+          title="Fotografi"
+          description="Our trusted photography partners who capture your moments beautifully"
+          vendors={transformVendors(photographyVendors, 'Recommended Photography')}
+        />
+      )}
       
-      <VendorSection
-        title="Videografi"
-        description="Creative storytellers who bring your memories to life"
-        vendors={videographyVendors}
-      />
+      {videographyVendors.length > 0 && (
+        <VendorSection
+          title="Videografi"
+          description="Creative storytellers who bring your memories to life"
+          vendors={transformVendors(videographyVendors, 'Recommended Videography')}
+        />
+      )}
       
-      <VendorSection
-        title="Make up / Hair & Hijab do"
-        description="Beauty experts who enhance every detail of your elegance"
-        vendors={makeupVendors}
-      />
+      {makeupVendors.length > 0 && (
+        <VendorSection
+          title="Make up / Hair & Hijab"
+          description="Beauty experts who enhance every detail of your elegance"
+          vendors={transformVendors(makeupVendors, 'Favorite Make Up')}
+        />
+      )}
       
-      <VendorSection
-        title="Attire"
-        description="Designers who craft perfection for your special day"
-        vendors={attireVendors}
-      />
+      {attireVendors.length > 0 && (
+        <VendorSection
+          title="Attire"
+          description="Designers who craft perfection for your special day"
+          vendors={transformVendors(attireVendors, 'Recommended Attire')}
+        />
+      )}
       
-      <VendorSection
-        title="Entertainment (Musik)"
-        description="Entertainers who set the perfect tone for your special day"
-        vendors={entertainmentVendors}
-      />
+      {entertainmentVendors.length > 0 && (
+        <VendorSection
+          title="Entertainment (Musik)"
+          description="Entertainers who set the perfect tone for your special day"
+          vendors={transformVendors(entertainmentVendors, 'Favorite Entertainment')}
+        />
+      )}
     </div>
   );
 }

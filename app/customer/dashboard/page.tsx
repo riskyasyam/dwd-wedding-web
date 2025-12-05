@@ -44,7 +44,7 @@ export default function CustomerDashboard() {
   const handleLogout = async () => {
     try {
       await authService.logout();
-      router.push('/login');
+      router.push('/');
     } catch (error) {
       console.error('Logout failed:', error);
     }

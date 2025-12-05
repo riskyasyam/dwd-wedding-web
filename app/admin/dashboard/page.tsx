@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService, User } from '@/lib/auth';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+// Menggunakan komponen bawaan card, tapi kita akan styling ulang container-nya
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -14,7 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FiPackage, FiGift, FiShoppingBag, FiCalendar, FiImage, FiStar } from 'react-icons/fi';
+// Mengganti icon ke Fa agar konsisten
+import { FaShoppingBag, FaClock, FaMoneyBillWave, FaUsers, FaChartLine, FaSignOutAlt, FaCog } from 'react-icons/fa';
 import AdminSidebar from '@/components/layout/AdminSidebar';
 
 export default function AdminDashboard() {
@@ -44,7 +46,7 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     try {
       await authService.logout();
-      router.push('/login');
+      router.push('/');
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -53,7 +55,10 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-gray-600">Loading...</p>
+        <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+           <p className="text-gray-600 mt-4 font-medium">Loading Dashboard...</p>
+        </div>
       </div>
     );
   }
@@ -64,6 +69,42 @@ export default function AdminDashboard() {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
+  // Data dummy untuk stat cards (bisa diganti data real nanti)
+  const stats = [
+    {
+      title: "Total Revenue",
+      value: "Rp 0",
+      change: "+0% from last month",
+      icon: <FaMoneyBillWave size={20} />,
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+    },
+    {
+      title: "Total Orders",
+      value: "0",
+      change: "+0 new orders",
+      icon: <FaShoppingBag size={20} />,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100",
+    },
+    {
+      title: "Pending Orders",
+      value: "0",
+      change: "Needs attention",
+      icon: <FaClock size={20} />,
+      color: "text-orange-600",
+      bgColor: "bg-orange-100",
+    },
+    {
+      title: "Total Customers",
+      value: "0",
+      change: "+0 new users",
+      icon: <FaUsers size={20} />,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
+    },
+  ];
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
@@ -72,143 +113,101 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="flex-1 ml-64">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-20">
           <div className="px-8 py-4">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+                <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-purple-600">
+                  Dashboard
+                </h2>
                 <p className="text-sm text-gray-500 mt-1">Welcome back, {user.first_name}!</p>
               </div>
               
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar>
-                      <AvatarFallback className="bg-[#D3A0D2] text-white">
-                        {getInitials(user.first_name, user.last_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user.first_name} {user.last_name}</p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center gap-4">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-11 w-11 rounded-full p-0 border-2 border-transparent hover:border-purple-200 transition-all">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white font-bold">
+                          {getInitials(user.first_name, user.last_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 mt-2" align="end">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium text-gray-900">{user.first_name} {user.last_name}</p>
+                        <p className="text-xs text-gray-500 font-normal">{user.email}</p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="cursor-pointer">
+                      <FaCog className="mr-2 h-4 w-4 text-gray-500" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer focus:text-red-600 focus:bg-red-50">
+                      <FaSignOutAlt className="mr-2 h-4 w-4" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
         </header>
 
         {/* Main Content Area */}
         <main className="p-8">
-          <div className="mb-8">
-            <p className="text-gray-600">Here's what's happening with your business today.</p>
+          <div className="mb-8 bg-gradient-to-r from-purple-600 to-pink-500 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+            <div className="relative z-10">
+                <h1 className="text-3xl font-bold mb-2">Hello, {user.first_name}!</h1>
+                <p className="opacity-90">Here is what's happening with your business today.</p>
+            </div>
+            {/* Decorative circles */}
+            <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-white opacity-10"></div>
+            <div className="absolute bottom-0 right-20 -mb-20 w-48 h-48 rounded-full bg-white opacity-10"></div>
           </div>
 
           {/* Stats Grid */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-500">Total Orders</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">0</div>
-                <p className="text-xs text-gray-500 mt-2">No orders yet</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-500">Pending Orders</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">0</div>
-                <p className="text-xs text-gray-500 mt-2">All caught up</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-500">Total Revenue</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">Rp 0</div>
-                <p className="text-xs text-gray-500 mt-2">This month</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-500">Total Customers</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">0</div>
-                <p className="text-xs text-gray-500 mt-2">Registered users</p>
-              </CardContent>
-            </Card>
+            {stats.map((stat, index) => (
+              <Card key={index} className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">{stat.title}</p>
+                      <h3 className="text-2xl font-bold text-gray-800">{stat.value}</h3>
+                    </div>
+                    <div className={`p-3 rounded-xl ${stat.bgColor} ${stat.color}`}>
+                      {stat.icon}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center text-xs">
+                    <span className="text-green-500 font-medium flex items-center">
+                      <FaChartLine className="mr-1" /> {stat.change}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Manage your wedding organizer business</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Button 
-                  className="h-24 flex flex-col gap-2 bg-[#D3A0D2] hover:bg-[#c490c3] text-white" 
-                  onClick={() => router.push('/admin/decorations')}
-                >
-                  <FiPackage className="w-6 h-6" />
-                  <span>Manage Decorations</span>
-                </Button>
-                <Button 
-                  className="h-24 flex flex-col gap-2 bg-[#D3A0D2] hover:bg-[#c490c3] text-white"
-                  onClick={() => router.push('/admin/packages')}
-                >
-                  <FiGift className="w-6 h-6" />
-                  <span>Manage Packages</span>
-                </Button>
-                <Button 
-                  className="h-24 flex flex-col gap-2 bg-[#D3A0D2] hover:bg-[#c490c3] text-white"
-                  onClick={() => router.push('/admin/orders')}
-                >
-                  <FiShoppingBag className="w-6 h-6" />
-                  <span>View Orders</span>
-                </Button>
-                <Button 
-                  className="h-24 flex flex-col gap-2 bg-[#D3A0D2] hover:bg-[#c490c3] text-white"
-                  onClick={() => router.push('/admin/events')}
-                >
-                  <FiCalendar className="w-6 h-6" />
-                  <span>Manage Events</span>
-                </Button>
-                <Button 
-                  className="h-24 flex flex-col gap-2 bg-[#D3A0D2] hover:bg-[#c490c3] text-white"
-                  onClick={() => router.push('/admin/gallery')}
-                >
-                  <FiImage className="w-6 h-6" />
-                  <span>Gallery</span>
-                </Button>
-                <Button 
-                  className="h-24 flex flex-col gap-2 bg-[#D3A0D2] hover:bg-[#c490c3] text-white"
-                  onClick={() => router.push('/admin/testimonials')}
-                >
-                  <FiStar className="w-6 h-6" />
-                  <span>Testimonials</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Additional Section (Placeholder for future widgets like Recent Orders) */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="rounded-2xl border border-gray-100 shadow-sm h-64 flex items-center justify-center bg-white">
+                <div className="text-center text-gray-400">
+                    <p className="mb-2">Chart Analytics Placeholder</p>
+                    <p className="text-xs">Sales overview will appear here</p>
+                </div>
+            </Card>
+            <Card className="rounded-2xl border border-gray-100 shadow-sm h-64 flex items-center justify-center bg-white">
+                <div className="text-center text-gray-400">
+                    <p className="mb-2">Recent Activities Placeholder</p>
+                    <p className="text-xs">Latest transactions will appear here</p>
+                </div>
+            </Card>
+          </div>
         </main>
       </div>
     </div>
