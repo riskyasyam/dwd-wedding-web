@@ -419,8 +419,8 @@ export default function DecorationsPage() {
                   <div className="mb-5 bg-purple-50 p-3 rounded-xl border border-purple-100">
                     <div className="flex items-end justify-between">
                        <div>
-                          <p className="text-xs text-purple-500 font-semibold uppercase tracking-wider">Final Price</p>
-                          <div className="text-xl font-bold text-purple-800">
+                          <p className="text-xs text-gray-700 font-semibold uppercase tracking-wider">Final Price</p>
+                          <div className="text-xl font-bold text-black">
                             {formatPrice(decoration.final_price)}
                           </div>
                        </div>
@@ -526,7 +526,7 @@ export default function DecorationsPage() {
                 
                 {/* Themed accent block for discounts */}
                 <div className="col-span-2 bg-purple-50 p-4 rounded-xl border border-purple-100">
-                    <h4 className="text-sm font-bold text-purple-800 mb-3 uppercase tracking-wide">Discount Settings</h4>
+                    <h4 className="text-sm font-bold text-black mb-3 uppercase tracking-wide">Discount Settings</h4>
                     <div className="grid grid-cols-3 gap-4">
                         <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Discount (%)</label>
