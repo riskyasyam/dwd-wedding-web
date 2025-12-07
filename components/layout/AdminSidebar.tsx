@@ -66,7 +66,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
     { id: 'testimonials', label: 'Testimonials', icon: FiStar, href: '/admin/testimonials' },
     { id: 'orders', label: 'Orders', icon: FiShoppingBag, href: '/admin/orders' },
     { id: 'customers', label: 'Customers', icon: FiUsers, href: '/admin/customers' },
-    { id: 'settings', label: 'Settings', icon: FiSettings, href: '/admin/settings' },
+    // { id: 'settings', label: 'Settings', icon: FiSettings, href: '/admin/settings' },
   ];
 
   const renderMenuItem = (item: MenuItem) => {

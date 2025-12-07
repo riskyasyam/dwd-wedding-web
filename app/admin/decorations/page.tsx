@@ -8,8 +8,11 @@ import { getImageUrl } from '@/lib/axios';
 // Hapus import Button & Card dari ui/shadcn karena kita pakai custom style di file ini
 // import { Button } from '@/components/ui/button';
 // import { Card, CardContent } from '@/components/ui/card';
-import { FaPlus, FaEdit, FaTrash, FaSearch, FaImage, FaTimes, FaGift, FaTag, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaSearch, FaImage, FaTimes, FaGift, FaTag, FaMapMarkerAlt, FaCheckCircle, FaFileContract, FaQuestionCircle } from 'react-icons/fa';
 import AdminSidebar from '@/components/layout/AdminSidebar';
+import AdvantagesManager from './components/AdvantagesManager';
+import TermsManager from './components/TermsManager';
+import FAQsManager from './components/FAQsManager';
 
 export default function DecorationsPage() {
   const router = useRouter();
@@ -23,6 +26,9 @@ export default function DecorationsPage() {
   const [showModal, setShowModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showFreeItemsModal, setShowFreeItemsModal] = useState(false);
+  const [showAdvantagesModal, setShowAdvantagesModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showFAQsModal, setShowFAQsModal] = useState(false);
   const [editingDecoration, setEditingDecoration] = useState<Decoration | null>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [freeItems, setFreeItems] = useState<FreeItem[]>([]);
@@ -434,12 +440,30 @@ export default function DecorationsPage() {
                   </div>
 
                   {/* Action Buttons using GradientButton component */}
-                  <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="grid grid-cols-3 gap-2 mb-3">
                     <GradientButton variant="secondary" onClick={() => handleManageImages(decoration)} className="text-xs py-1.5">
                        <FaImage className="mr-1" /> Gallery ({decoration.images?.length || 0})
                     </GradientButton>
                     <GradientButton variant="secondary" onClick={() => handleManageFreeItems(decoration)} className="text-xs py-1.5">
-                       <FaGift className="mr-1" /> Items ({decoration.freeItems?.length || 0})
+                       <FaGift className="mr-1" /> Items
+                    </GradientButton>
+                    <GradientButton variant="secondary" onClick={() => {
+                      setEditingDecoration(decoration);
+                      setShowAdvantagesModal(true);
+                    }} className="text-xs py-1.5">
+                       <FaCheckCircle className="mr-1" /> Advantages
+                    </GradientButton>
+                    <GradientButton variant="secondary" onClick={() => {
+                      setEditingDecoration(decoration);
+                      setShowTermsModal(true);
+                    }} className="text-xs py-1.5">
+                       <FaFileContract className="mr-1" /> Terms
+                    </GradientButton>
+                    <GradientButton variant="secondary" onClick={() => {
+                      setEditingDecoration(decoration);
+                      setShowFAQsModal(true);
+                    }} className="text-xs py-1.5">
+                       <FaQuestionCircle className="mr-1" /> FAQs
                     </GradientButton>
                   </div>
                   
@@ -793,6 +817,96 @@ export default function DecorationsPage() {
                     )}
                   </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Advantages Modal */}
+      {showAdvantagesModal && editingDecoration && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-8">
+              <div className="flex justify-between items-center border-b border-gray-100 pb-6 mb-6">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <span className="bg-green-50 border border-green-100 p-2 rounded-lg text-green-600">
+                    <FaCheckCircle />
+                  </span>
+                  {editingDecoration.name} - Advantages
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowAdvantagesModal(false);
+                    setEditingDecoration(null);
+                    fetchDecorations();
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <FaTimes size={24} />
+                </button>
+              </div>
+
+              <AdvantagesManager decorationId={editingDecoration.id} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Terms Modal */}
+      {showTermsModal && editingDecoration && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-8">
+              <div className="flex justify-between items-center border-b border-gray-100 pb-6 mb-6">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <span className="bg-yellow-50 border border-yellow-100 p-2 rounded-lg text-yellow-600">
+                    <FaFileContract />
+                  </span>
+                  {editingDecoration.name} - Terms & Conditions
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowTermsModal(false);
+                    setEditingDecoration(null);
+                    fetchDecorations();
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <FaTimes size={24} />
+                </button>
+              </div>
+
+              <TermsManager decorationId={editingDecoration.id} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FAQs Modal */}
+      {showFAQsModal && editingDecoration && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-8">
+              <div className="flex justify-between items-center border-b border-gray-100 pb-6 mb-6">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <span className="bg-blue-50 border border-blue-100 p-2 rounded-lg text-blue-600">
+                    <FaQuestionCircle />
+                  </span>
+                  {editingDecoration.name} - FAQs
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowFAQsModal(false);
+                    setEditingDecoration(null);
+                    fetchDecorations();
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <FaTimes size={24} />
+                </button>
+              </div>
+
+              <FAQsManager decorationId={editingDecoration.id} />
             </div>
           </div>
         </div>

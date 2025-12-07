@@ -9,11 +9,6 @@ const nextConfig: NextConfig = {
         port: '8000',
         pathname: '/storage/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'arlinda-scyphiform-warily.ngrok-free.dev',
-        pathname: '/storage/**',
-      },
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',

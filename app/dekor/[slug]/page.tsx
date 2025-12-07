@@ -9,6 +9,26 @@ import MenuNav from '@/components/layout/MenuNav';
 import Footer from '@/components/layout/Footer';
 import api, { getImageUrl } from '@/lib/axios';
 
+interface Advantage {
+  id: number;
+  title: string;
+  description?: string | null;
+  order: number;
+}
+
+interface Term {
+  id: number;
+  term: string;
+  order: number;
+}
+
+interface FAQ {
+  id: number;
+  question: string;
+  answer: string;
+  order: number;
+}
+
 interface DecorationDetail {
   id: number;
   name: string;
@@ -24,9 +44,9 @@ interface DecorationDetail {
   review_count?: number;
   is_deals: boolean;
   images?: { id: number; image: string }[];
-  features?: string[];
-  package_includes?: string[];
-  terms_conditions?: string[];
+  advantages?: Advantage[];
+  terms?: Term[];
+  faqs?: FAQ[];
 }
 
 interface Review {
@@ -41,23 +61,17 @@ interface Review {
   } | null;
 }
 
-interface FAQ {
-  id: number;
-  question: string;
-  answer: string;
-}
-
 export default function DecorationDetailPage() {
   const params = useParams();
   const slug = params?.slug as string;
   
   const [decoration, setDecoration] = useState<DecorationDetail | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [faqs, setFAQs] = useState<FAQ[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'details' | 'reviews' | 'faqs'>('reviews');
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -119,30 +133,6 @@ export default function DecorationDetailPage() {
           });
           setReviews([]);
         }
-
-        // Mock FAQs (bisa diganti dengan API jika ada endpoint)
-        setFAQs([
-          {
-            id: 1,
-            question: 'Berapa lama waktu setup dekorasi?',
-            answer: 'Setup dekorasi biasanya memakan waktu 3-4 jam sebelum acara dimulai, tergantung kompleksitas desain.'
-          },
-          {
-            id: 2,
-            question: 'Apakah harga sudah termasuk bongkar pasang?',
-            answer: 'Ya, harga sudah termasuk setup dan pembongkaran setelah acara selesai.'
-          },
-          {
-            id: 3,
-            question: 'Bisakah custom desain sesuai request?',
-            answer: 'Tentu! Kami menerima custom request dengan biaya tambahan sesuai tingkat kesulitan desain.'
-          },
-          {
-            id: 4,
-            question: 'Bagaimana jika terjadi kerusakan pada dekorasi?',
-            answer: 'Kami membawa backup material untuk antisipasi kerusakan. Jika terjadi kerusakan karena force majeure, kami akan segera menggantinya.'
-          }
-        ]);
 
       } catch (error: any) {
         console.error('Failed to fetch decoration detail:', {
@@ -248,7 +238,7 @@ export default function DecorationDetailPage() {
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
-                    className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`relative shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
                       selectedImage === idx ? 'border-purple-500' : 'border-gray-200'
                     }`}
                   >
@@ -419,43 +409,40 @@ export default function DecorationDetailPage() {
 
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 mb-4">Fitur & Keunggulan</h3>
-                  <ul className="space-y-3">
-                    <li className="flex items-start gap-3">
-                      <span className="text-green-500 mt-1">✓</span>
-                      <span className="text-gray-700">Setup dan bongkar pasang oleh tim profesional</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-green-500 mt-1">✓</span>
-                      <span className="text-gray-700">Material berkualitas tinggi dan modern</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-green-500 mt-1">✓</span>
-                      <span className="text-gray-700">Desain dapat dikustomisasi sesuai tema acara</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-green-500 mt-1">✓</span>
-                      <span className="text-gray-700">Konsultasi gratis dengan wedding decorator</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-green-500 mt-1">✓</span>
-                      <span className="text-gray-700">Backup material untuk antisipasi kerusakan</span>
-                    </li>
-                  </ul>
+                  {decoration.advantages && decoration.advantages.length > 0 ? (
+                    <ul className="space-y-3">
+                      {decoration.advantages.map((advantage) => (
+                        <li key={advantage.id} className="flex items-start gap-3">
+                          <span className="text-green-500 mt-1">✓</span>
+                          <div className="flex-1">
+                            <span className="text-gray-700">{advantage.title}</span>
+                            {advantage.description && (
+                              <p className="text-gray-500 text-sm mt-1">{advantage.description}</p>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-500 italic">Belum ada fitur & keunggulan yang ditambahkan</p>
+                  )}
                 </div>
 
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 mb-4">Ketentuan & Syarat</h3>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-                    <ul className="space-y-2 text-gray-700 text-sm">
-                      <li>• Booking minimal 2 minggu sebelum tanggal acara</li>
-                      <li>• DP 30% dari total harga saat booking dikonfirmasi</li>
-                      <li>• Pelunasan maksimal H-3 sebelum acara</li>
-                      <li>• Pembatalan tanpa pengembalian DP jika kurang dari 1 minggu sebelum acara</li>
-                      <li>• Perubahan desain dapat dilakukan maksimal H-7 sebelum acara</li>
-                      <li>• Setup dilakukan 3-4 jam sebelum acara dimulai</li>
-                      <li>• Bongkar pasang dilakukan setelah acara selesai (maksimal +3 jam)</li>
-                    </ul>
-                  </div>
+                  {decoration.terms && decoration.terms.length > 0 ? (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+                      <ul className="space-y-2 text-gray-700 text-sm">
+                        {decoration.terms.map((term) => (
+                          <li key={term.id}>• {term.term}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+                      <p className="text-gray-500 italic">Belum ada ketentuan & syarat yang ditambahkan</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -535,19 +522,49 @@ export default function DecorationDetailPage() {
                   Frequently Asked Questions
                 </h3>
 
-                <div className="space-y-4">
-                  {faqs.map((faq) => (
-                    <div key={faq.id} className="border border-gray-200 rounded-xl p-6 hover:border-purple-300 transition">
-                      <h4 className="font-bold text-gray-900 text-lg mb-3 flex items-start gap-2">
-                        <span className="text-purple-600 shrink-0">Q:</span>
-                        {faq.question}
-                      </h4>
-                      <p className="text-gray-600 leading-relaxed pl-6">
-                        <span className="font-semibold text-gray-700">A:</span> {faq.answer}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                {decoration.faqs && decoration.faqs.length > 0 ? (
+                  <div className="space-y-3">
+                    {decoration.faqs.map((faq) => (
+                      <div key={faq.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                        {/* Question Button */}
+                        <button
+                          onClick={() => setExpandedFAQ(expandedFAQ === faq.id ? null : faq.id)}
+                          className="w-full flex items-start justify-between p-5 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                        >
+                          <div className="flex items-start gap-3 flex-1">
+                            <span className="text-purple-600 font-bold text-lg mt-0.5">Q:</span>
+                            <h4 className="font-bold text-gray-900 text-base">{faq.question}</h4>
+                          </div>
+                          <span className="text-gray-400 ml-3 shrink-0">
+                            {expandedFAQ === faq.id ? (
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            )}
+                          </span>
+                        </button>
+
+                        {/* Answer Panel */}
+                        {expandedFAQ === faq.id && (
+                          <div className="p-5 bg-white border-t border-gray-200">
+                            <div className="flex items-start gap-3">
+                              <span className="text-gray-600 font-bold text-lg">A:</span>
+                              <p className="text-gray-700 leading-relaxed">{faq.answer}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                    <p className="text-gray-500 italic">Belum ada FAQ untuk produk ini</p>
+                  </div>
+                )}
 
                 <div className="mt-8 bg-purple-50 border border-purple-200 rounded-xl p-6">
                   <h4 className="font-bold text-gray-900 mb-2">Masih ada pertanyaan?</h4>

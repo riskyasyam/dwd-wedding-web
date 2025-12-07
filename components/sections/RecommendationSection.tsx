@@ -16,6 +16,13 @@ interface DecorationCard {
   discount_start_date?: string;
   discount_end_date?: string;
   is_deals: boolean;
+  free_items?: Array<{
+    id: number;
+    item_name: string;
+    description?: string;
+    quantity: number;
+  }>;
+  free_items_count?: number;
 }
 
 export default function RecommendationSection() {
@@ -184,6 +191,25 @@ export default function RecommendationSection() {
 
                   {/* Card Content */}
                   <div className="p-4">
+                    {/* Free Items Tags */}
+                    {item.free_items && item.free_items.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {item.free_items.slice(0, 2).map((freeItem, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 bg-pink-50 text-pink-700 border border-pink-200 px-2 py-1 rounded-full text-xs font-medium"
+                          >
+                            {freeItem.item_name}
+                          </span>
+                        ))}
+                        {item.free_items.length > 2 && (
+                          <span className="inline-flex items-center bg-pink-50 text-pink-700 border border-pink-200 px-2 py-1 rounded-full text-xs font-medium">
+                            +{item.free_items.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     {/* Title */}
                     <h4 className="text-lg font-bold text-gray-900 mb-1">
                       {item.name}
