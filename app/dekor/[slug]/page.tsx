@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
 import MenuNav from '@/components/layout/MenuNav';
 import Footer from '@/components/layout/Footer';
 import api, { getImageUrl } from '@/lib/axios';
+import { authService } from '@/lib/auth';
 
 interface Advantage {
   id: number;
@@ -63,6 +64,7 @@ interface Review {
 
 export default function DecorationDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params?.slug as string;
   
   const [decoration, setDecoration] = useState<DecorationDetail | null>(null);
@@ -71,6 +73,7 @@ export default function DecorationDetailPage() {
   const [activeTab, setActiveTab] = useState<'details' | 'reviews' | 'faqs'>('reviews');
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [addingToCart, setAddingToCart] = useState(false);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
 
   useEffect(() => {
@@ -98,51 +101,32 @@ export default function DecorationDetailPage() {
         const decoData = decoResponse.data.data;
         setDecoration(decoData);
 
-        // Fetch reviews from API
+        // Fetch reviews from API - skip if endpoint not available
         try {
-          const reviewsResponse = await api.get(`/admin/reviews`, {
-            params: {
-              decoration_id: decoData.id,
-              page: 1,
-              per_page: 10
+          const reviewsResponse = await api.get(`/public/decorations/${decoData.id}/reviews`);
+          
+          if (reviewsResponse.data.success) {
+            const reviewsData = reviewsResponse.data.data;
+            // Ensure reviewsData is an array
+            if (Array.isArray(reviewsData)) {
+              setReviews(reviewsData);
+            } else if (reviewsData && Array.isArray(reviewsData.reviews)) {
+              // Handle nested reviews structure
+              setReviews(reviewsData.reviews);
+            } else {
+              setReviews([]);
             }
-          });
-          
-          console.log('Reviews API Response:', reviewsResponse.data);
-          
-          // Try different possible response structures
-          let reviewsData = [];
-          if (reviewsResponse.data.data?.data) {
-            // Paginated: { data: { data: [...], total, per_page, etc } }
-            reviewsData = reviewsResponse.data.data.data;
-          } else if (reviewsResponse.data.data?.reviews?.data) {
-            // Nested: { data: { reviews: { data: [...] } } }
-            reviewsData = reviewsResponse.data.data.reviews.data;
-          } else if (Array.isArray(reviewsResponse.data.data)) {
-            // Direct array: { data: [...] }
-            reviewsData = reviewsResponse.data.data;
+          } else {
+            setReviews([]);
           }
-          
-          console.log('Parsed reviews:', reviewsData);
-          setReviews(reviewsData || []);
         } catch (reviewError: any) {
-          console.warn('Failed to fetch reviews:', {
-            status: reviewError.response?.status,
-            message: reviewError.response?.data?.message || reviewError.message,
-            url: reviewError.config?.url
-          });
+          // Reviews endpoint might not exist yet, just show empty reviews
+          console.warn('Reviews not available:', reviewError.response?.data?.message || reviewError.message);
           setReviews([]);
         }
 
       } catch (error: any) {
-        console.error('Failed to fetch decoration detail:', {
-          status: error.response?.status,
-          message: error.response?.data?.message || error.message,
-          url: error.config?.url,
-          data: error.response?.data
-        });
-        
-        // Set decoration to null to show not found message
+        console.error('Failed to fetch decoration detail:', error.response?.data?.message || error.message);
         setDecoration(null);
       } finally {
         setLoading(false);
@@ -152,7 +136,42 @@ export default function DecorationDetailPage() {
     fetchData();
   }, [slug]);
 
-  const formatPrice = (price: number) => {
+  const handleAddToCart = async () => {
+    // Check if user is authenticated
+    if (!authService.isAuthenticated()) {
+      alert('Please login to add items to cart');
+      router.push('/login');
+      return;
+    }
+
+    if (!decoration) return;
+
+    setAddingToCart(true);
+    try {
+      const response = await api.post('/customer/cart/add', {
+        decoration_id: decoration.id,
+        type: 'custom',
+        quantity: quantity,
+      });
+
+      if (response.data.success) {
+        alert('Item added to cart successfully!');
+        // Optionally redirect to cart page
+        const goToCart = confirm('Go to cart now?');
+        if (goToCart) {
+          router.push('/cart');
+        }
+      }
+    } catch (error: any) {
+      console.error('Error adding to cart:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to add item to cart';
+      alert(errorMessage);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
@@ -313,7 +332,9 @@ export default function DecorationDetailPage() {
 
             {/* Quantity Selector */}
             <div className="mb-6">
-              <p className="text-gray-700 font-medium mb-2">Pilih Paket</p>
+              <p className="text-gray-700 font-medium mb-3">Jumlah</p>
+              
+              {/* Quantity */}
               <div className="flex items-center gap-4">
                 <div className="flex items-center border-2 border-gray-300 rounded-lg">
                   <button
@@ -335,8 +356,12 @@ export default function DecorationDetailPage() {
 
             {/* Action Buttons */}
             <div className="flex gap-4">
-              <button className="flex-1 bg-black text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition">
-                Add to Cart
+              <button 
+                onClick={handleAddToCart}
+                disabled={addingToCart}
+                className="flex-1 bg-black text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {addingToCart ? 'Adding...' : 'Add to Cart'}
               </button>
             </div>
           </div>
@@ -399,7 +424,7 @@ export default function DecorationDetailPage() {
                         <p className="text-gray-600 text-sm mb-1">Rating</p>
                         <p className="font-semibold text-gray-900">{decoration.rating || 0}/5 ({decoration.review_count || 0} reviews)</p>
                       </div>
-                      <div>
+                      <div> 
                         <p className="text-gray-600 text-sm mb-1">Status</p>
                         <p className="font-semibold text-green-600">Available</p>
                       </div>
@@ -452,7 +477,7 @@ export default function DecorationDetailPage() {
               <div>
                 <div className="grid grid-cols-3 items-center mb-6 w-full">
                   <h3 className="text-2xl font-bold text-gray-900">
-                    All Reviews <span className="text-gray-500">({reviews.length})</span>
+                    All Reviews <span className="text-gray-500">({Array.isArray(reviews) ? reviews.length : 0})</span>
                   </h3>
 
                   <div></div>
@@ -463,8 +488,15 @@ export default function DecorationDetailPage() {
                     </button>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {reviews.map((review) => (
+                
+                {!Array.isArray(reviews) || reviews.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                    <p className="text-gray-500 italic">Belum ada review untuk produk ini</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {reviews.map((review) => (
                     <div key={review.id} className="border border-gray-200 rounded-xl p-6">
                       {/* Rating Stars */}
                       <div className="flex items-center gap-1 mb-3">
@@ -511,6 +543,8 @@ export default function DecorationDetailPage() {
                       Load More Reviews
                     </button>
                   </div>
+                )}
+                  </>
                 )}
               </div>
             )}

@@ -2,18 +2,75 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
-import { FiSearch, FiChevronDown } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiSearch, FiChevronDown, FiShoppingCart } from 'react-icons/fi';
+import { authService, User } from '@/lib/auth';
+import api from '@/lib/axios';
 
 export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [selectedLang, setSelectedLang] = useState<'ID' | 'EN'>('ID');
+  const [user, setUser] = useState<User | null>(null);
+  const [cartItemCount, setCartItemCount] = useState(0);
+  const [isClient, setIsClient] = useState(false);
 
   const languages = [
     { code: 'ID', flag: '/images/flag_indo1.png', name: 'Indonesia' },
     { code: 'EN', flag: '/images/flag_english.png', name: 'English' },
   ];
+
+  useEffect(() => {
+    setIsClient(true);
+    
+    // Check authentication and fetch user data
+    const fetchUserData = async () => {
+      if (authService.isAuthenticated()) {
+        try {
+          const userData = await authService.getUser();
+          setUser(userData);
+          
+          // Fetch cart count for customers
+          if (userData.role === 'customer') {
+            fetchCartCount();
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          // Clear invalid token
+          localStorage.removeItem('token');
+        }
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const fetchCartCount = async () => {
+    try {
+      const response = await api.get('/customer/cart');
+      if (response.data.success) {
+        setCartItemCount(response.data.data.item_count || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching cart count:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      setUser(null);
+      setCartItemCount(0);
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  const getDashboardLink = () => {
+    if (!user) return '/';
+    return user.role === 'admin' ? '/admin/dashboard' : '/customer/dashboard';
+  };
 
   const handleLanguageChange = (code: 'ID' | 'EN') => {
     setSelectedLang(code);
@@ -52,20 +109,54 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Right Side - Register, Login, Language */}
+          {/* Right Side - Cart, Register/Login/Dashboard, Language */}
           <div className="flex items-center gap-4">
-            <Link
-              href="/register"
-              className="text-sm px-6 py-2 bg-[#F2F2F7] border border-[#9A82DB] rounded-lg text-gray-900 font-medium hover:bg-gray-100 transition-colors"
-            >
-              Register
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm px-6 py-2 bg-[#F2F2F7] border border-[#9A82DB] rounded-lg text-gray-900 font-medium hover:bg-gray-100 transition-colors"
-            >
-              Login
-            </Link>
+            {/* Cart Icon - Only show for authenticated customers */}
+            {isClient && user && user.role === 'customer' && (
+              <Link href="/cart" className="relative">
+                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <FiShoppingCart className="h-6 w-6 text-gray-700" />
+                  {cartItemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {cartItemCount > 99 ? '99+' : cartItemCount}
+                    </span>
+                  )}
+                </button>
+              </Link>
+            )}
+
+            {/* Auth Buttons */}
+            {isClient && !user ? (
+              <>
+                <Link
+                  href="/register"
+                  className="text-sm px-6 py-2 bg-[#F2F2F7] border border-[#9A82DB] rounded-lg text-gray-900 font-medium hover:bg-gray-100 transition-colors"
+                >
+                  Register
+                </Link>
+                <Link
+                  href="/login"
+                  className="text-sm px-6 py-2 bg-[#F2F2F7] border border-[#9A82DB] rounded-lg text-gray-900 font-medium hover:bg-gray-100 transition-colors"
+                >
+                  Login
+                </Link>
+              </>
+            ) : isClient && user ? (
+              <>
+                <Link
+                  href={getDashboardLink()}
+                  className="text-sm px-6 py-2 bg-[#9A82DB] border border-[#9A82DB] rounded-lg text-white font-medium hover:bg-[#8A72CB] transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-sm px-6 py-2 bg-red-500 border border-red-500 rounded-lg text-white font-medium hover:bg-red-600 transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            ) : null}
             
             {/* Language Selector with Dropdown */}
             <div className="relative">
