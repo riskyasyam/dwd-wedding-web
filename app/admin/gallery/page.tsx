@@ -47,9 +47,9 @@ export default function GalleryPage() {
     <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar user={user} />
 
-      <div className="flex-1 ml-64">
+      <div className="flex-1 md:ml-64">
         <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="px-8 py-4">
+          <div className="px-8 py-4 pt-20 md:pt-4">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Gallery</h2>

@@ -240,9 +240,9 @@ export default function EventsPage() {
     <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar user={user} />
       
-      <div className="flex-1 ml-64 p-8">
+      <div className="flex-1 md:ml-64 p-4 md:p-8">
         {/* Header Section */}
-        <div className="mb-8">
+        <div className="mb-8 pt-20 md:pt-0">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
                 <div className="flex justify-between items-center mb-6">
                     <div>

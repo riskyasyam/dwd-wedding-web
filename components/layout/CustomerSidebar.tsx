@@ -137,7 +137,7 @@ export default function CustomerSidebar({ user }: CustomerSidebarProps) {
                 >
                   Logout
                 </button>
-              </div>
+              </div>  
             </div>
           </div>
         </div>

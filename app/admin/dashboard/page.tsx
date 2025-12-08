@@ -111,13 +111,13 @@ export default function AdminDashboard() {
       <AdminSidebar user={user} />
 
       {/* Main Content */}
-      <div className="flex-1 ml-64">
+      <div className="flex-1 md:ml-64">
         {/* Header */}
         <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-20">
-          <div className="px-8 py-4">
-            <div className="flex justify-between items-center">
+          <div className="px-4 md:px-8 py-4 pt-20 md:pt-4">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
               <div>
-                <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-purple-600">
+                <h2 className="text-2xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-purple-600">
                   Dashboard
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">Welcome back, {user.first_name}!</p>
@@ -158,11 +158,11 @@ export default function AdminDashboard() {
         </header>
 
         {/* Main Content Area */}
-        <main className="p-8">
-          <div className="mb-8 bg-gradient-to-r from-purple-600 to-pink-500 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+        <main className="p-4 md:p-8">
+          <div className="mb-6 md:mb-8 bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl md:rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
             <div className="relative z-10">
-                <h1 className="text-3xl font-bold mb-2">Hello, {user.first_name}!</h1>
-                <p className="opacity-90">Here is what's happening with your business today.</p>
+                <h1 className="text-2xl md:text-3xl font-bold mb-2">Hello, {user.first_name}!</h1>
+                <p className="opacity-90 text-sm md:text-base">Here is what's happening with your business today.</p>
             </div>
             {/* Decorative circles */}
             <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-white opacity-10"></div>
@@ -170,14 +170,14 @@ export default function AdminDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
             {stats.map((stat, index) => (
-              <Card key={index} className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden">
-                <CardContent className="p-6">
+              <Card key={index} className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow rounded-xl md:rounded-2xl overflow-hidden">
+                <CardContent className="p-4 md:p-6">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-sm font-medium text-gray-500 mb-1">{stat.title}</p>
-                      <h3 className="text-2xl font-bold text-gray-800">{stat.value}</h3>
+                      <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">{stat.title}</p>
+                      <h3 className="text-xl md:text-2xl font-bold text-gray-800">{stat.value}</h3>
                     </div>
                     <div className={`p-3 rounded-xl ${stat.bgColor} ${stat.color}`}>
                       {stat.icon}
@@ -194,16 +194,16 @@ export default function AdminDashboard() {
           </div>
 
           {/* Additional Section (Placeholder for future widgets like Recent Orders) */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="rounded-2xl border border-gray-100 shadow-sm h-64 flex items-center justify-center bg-white">
+          <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
+            <Card className="rounded-xl md:rounded-2xl border border-gray-100 shadow-sm h-48 md:h-64 flex items-center justify-center bg-white">
                 <div className="text-center text-gray-400">
-                    <p className="mb-2">Chart Analytics Placeholder</p>
+                    <p className="mb-2 text-sm md:text-base">Chart Analytics Placeholder</p>
                     <p className="text-xs">Sales overview will appear here</p>
                 </div>
             </Card>
-            <Card className="rounded-2xl border border-gray-100 shadow-sm h-64 flex items-center justify-center bg-white">
+            <Card className="rounded-xl md:rounded-2xl border border-gray-100 shadow-sm h-48 md:h-64 flex items-center justify-center bg-white">
                 <div className="text-center text-gray-400">
-                    <p className="mb-2">Recent Activities Placeholder</p>
+                    <p className="mb-2 text-sm md:text-base">Recent Activities Placeholder</p>
                     <p className="text-xs">Latest transactions will appear here</p>
                 </div>
             </Card>

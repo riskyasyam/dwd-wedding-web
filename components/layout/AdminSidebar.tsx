@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
   FiHome, FiPackage, FiGift, FiShoppingBag, FiCalendar, 
   FiImage, FiStar, FiUsers, FiSettings, FiLogOut, 
-  FiChevronDown, FiChevronRight, FiBriefcase, FiAlertCircle 
+  FiChevronDown, FiChevronRight, FiBriefcase, FiAlertCircle, FiMenu, FiX 
 } from 'react-icons/fi';
 import { authService } from '@/lib/auth';
 
@@ -33,6 +33,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
   
   // State untuk mengontrol visibilitas modal logout
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -101,7 +102,10 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
                 return (
                   <li key={child.id}>
                     <button
-                      onClick={() => router.push(child.href)}
+                      onClick={() => {
+                        router.push(child.href);
+                        setIsMobileSidebarOpen(false);
+                      }}
                       className={`w-full text-left px-4 py-2 rounded-xl text-sm transition-all ${
                         isChildActive
                           ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white font-medium shadow-md'
@@ -122,7 +126,12 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
     return (
       <li key={item.id}>
         <button
-          onClick={() => item.href && router.push(item.href)}
+          onClick={() => {
+            if (item.href) {
+              router.push(item.href);
+              setIsMobileSidebarOpen(false);
+            }
+          }}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
             isActive
               ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white font-medium shadow-md'
@@ -138,7 +147,34 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
 
   return (
     <>
-      <aside className="w-64 bg-white shadow-lg fixed h-full flex flex-col z-40">
+      {/* Mobile Hamburger Button - Higher z-index */}
+      <button
+        onClick={() => setIsMobileSidebarOpen(true)}
+        className="md:hidden fixed top-4 left-4 z-50 p-3 bg-gradient-to-r from-pink-400 to-purple-400 text-white rounded-lg shadow-lg hover:shadow-xl transition-all"
+      >
+        <FiMenu className="w-6 h-6" />
+      </button>
+
+      {/* Mobile Overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-[60]"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`w-64 bg-white shadow-lg fixed h-full flex flex-col transition-transform duration-300 ${
+        isMobileSidebarOpen ? 'translate-x-0 z-[70]' : '-translate-x-full z-40'
+      } md:translate-x-0 md:z-40`}>
+        {/* Mobile Close Button */}
+        <button
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="md:hidden absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+        >
+          <FiX className="w-6 h-6 text-gray-700" />
+        </button>
+
         {/* Logo */}
         <div className="p-6 border-b border-gray-200">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent" style={{ fontFamily: 'var(--font-red-hat-display)' }}>
