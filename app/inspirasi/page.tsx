@@ -24,21 +24,14 @@ interface Inspiration {
 export default function InspirasiPage() {
   const [inspirations, setInspirations] = useState<Inspiration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCountry, setSelectedCountry] = useState("Indonesia");
+  const [selectedCountry, setSelectedCountry] = useState("All");
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [savingStates, setSavingStates] = useState<{ [key: number]: boolean }>({});
-
-  const countryList = [
-    "Indonesia",
-    "Korea",
-    "Japan",
-    "India",
-    "International",
-  ];
+  const [countryList, setCountryList] = useState<string[]>(["All"]);
 
   const colors = [
     { name: 'Red', hex: '#FF383C' },
@@ -70,11 +63,11 @@ export default function InspirasiPage() {
         const params: any = {
           page: currentPage,
           per_page: 20,
-          order_by: 'liked_count',
+          order_by: 'created_at',
           order_dir: 'desc'
         };
 
-        if (selectedCountry !== "International") {
+        if (selectedCountry !== "All") {
           params.location = selectedCountry;
         }
 
@@ -102,6 +95,30 @@ export default function InspirasiPage() {
 
     fetchInspirations();
   }, [currentPage, selectedCountry, selectedColor]);
+
+  // Fetch unique locations for country filter
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await api.get('/public/inspirations', { 
+          params: { per_page: 1000 } // Get all to extract unique locations
+        });
+        const data = response.data.data;
+        const allInspirations = data.data || [];
+        
+        // Extract unique locations
+        const uniqueLocations = Array.from(
+          new Set(allInspirations.map((item: Inspiration) => item.location))
+        ).sort() as string[];
+        
+        setCountryList(["All", ...uniqueLocations]);
+      } catch (error) {
+        console.error('Failed to fetch locations:', error);
+      }
+    };
+
+    fetchLocations();
+  }, []);
 
   const handleToggleSave = async (inspiration: Inspiration) => {
     try {
