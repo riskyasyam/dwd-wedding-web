@@ -33,11 +33,18 @@ interface Order {
   updated_at: string;
   items: Array<{
     id: number;
+    decoration_id: number;
     decoration_name: string;
     type: string;
     quantity: number;
     price: number;
     subtotal: number;
+    has_reviewed: boolean;
+    decoration?: {
+      id: number;
+      name: string;
+      images?: Array<{ image_path: string }>;
+    };
   }>;
 }
 
@@ -47,6 +54,11 @@ export default function CustomerOrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedDecorationId, setSelectedDecorationId] = useState<number | null>(null);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -93,6 +105,35 @@ export default function CustomerOrdersPage() {
     }
   };
 
+  const handleOpenReviewModal = (order: Order, decorationId: number) => {
+    setSelectedOrder(order);
+    setSelectedDecorationId(decorationId);
+    setReviewForm({ rating: 5, comment: '' });
+    setShowReviewModal(true);
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder || !selectedDecorationId) return;
+
+    try {
+      setSubmittingReview(true);
+      await api.post(`/customer/orders/${selectedOrder.id}/review`, {
+        decoration_id: selectedDecorationId,
+        ...reviewForm
+      });
+      alert('Review submitted successfully!');
+      setShowReviewModal(false);
+      setSelectedDecorationId(null);
+      fetchOrders(); // Refresh orders to update has_reviewed status
+    } catch (error: any) {
+      console.error('Error submitting review:', error);
+      alert(error.response?.data?.message || 'Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -109,9 +150,17 @@ export default function CustomerOrdersPage() {
 
       <div className="flex-1 ml-64">
         <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="px-8 py-4">
-            <h2 className="text-2xl font-bold text-gray-900">My Orders</h2>
-            <p className="text-sm text-gray-500 mt-1">View and track your orders</p>
+          <div className="px-8 py-4 flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">My Orders</h2>
+              <p className="text-sm text-gray-500 mt-1">View and track your orders</p>
+            </div>
+            <Link 
+              href="/dekor"
+              className="px-6 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl hover:from-pink-600 hover:to-purple-700 transition font-medium shadow-sm"
+            >
+              Browse Decorations
+            </Link>
           </div>
         </header>
 
@@ -176,12 +225,37 @@ export default function CustomerOrdersPage() {
                       </div>
 
                       <div className="mb-3">
-                        <p className="text-sm text-gray-600 mb-1">Items:</p>
-                        {order.items.map((item, idx) => (
-                          <p key={idx} className="text-sm text-gray-700">
-                            • {item.decoration_name} - {item.type} (x{item.quantity})
-                          </p>
-                        ))}
+                        <p className="text-sm text-gray-600 mb-2 font-semibold">Items:</p>
+                        <div className="space-y-2">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {item.decoration?.name || item.decoration_name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {item.type} • Qty: {item.quantity} • Rp {item.price.toLocaleString('id-ID')}
+                                </p>
+                              </div>
+                              {(order.status === 'paid' || order.status === 'completed') && (
+                                <div className="ml-3">
+                                  {item.has_reviewed ? (
+                                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                      ✓ Reviewed
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleOpenReviewModal(order, item.decoration_id)}
+                                      className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-xs font-medium"
+                                    >
+                                      Review
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
                       <div className="flex justify-between items-center pt-3 border-t border-gray-200">
@@ -206,6 +280,85 @@ export default function CustomerOrdersPage() {
           </Card>
         </main>
       </div>
+
+      {/* Review Modal */}
+      {showReviewModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+            <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
+              <h3 className="text-xl font-bold text-gray-900">Write Review</h3>
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="text-gray-400 hover:text-red-500 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReview} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Order</label>
+                <p className="text-sm text-gray-600">#{selectedOrder.order_number}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Decoration</label>
+                <p className="text-sm text-gray-900 font-medium">
+                  {selectedOrder.items.find(item => item.decoration_id === selectedDecorationId)?.decoration?.name || 
+                   selectedOrder.items.find(item => item.decoration_id === selectedDecorationId)?.decoration_name}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Rating *</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                      className={`text-3xl transition-colors ${
+                        star <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-300'
+                      }`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Comment *</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={reviewForm.comment}
+                  onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none"
+                  placeholder="Share your experience with this decoration..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReview}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-white bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submittingReview ? 'Submitting...' : 'Submit Review'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

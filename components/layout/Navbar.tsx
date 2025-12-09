@@ -77,7 +77,7 @@ export default function Navbar() {
 
   const getDashboardLink = () => {
     if (!user) return '/';
-    return user.role === 'admin' ? '/admin/dashboard' : '/customer/dashboard';
+    return user.role === 'admin' ? '/admin/dashboard' : '/customer/orders';
   };
 
   const handleLanguageChange = (code: 'ID' | 'EN') => {

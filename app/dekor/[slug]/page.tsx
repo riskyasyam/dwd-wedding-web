@@ -30,6 +30,15 @@ interface FAQ {
   order: number;
 }
 
+interface FreeItem {
+  id: number;
+  decoration_id: number;
+  item_name: string;
+  description?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 interface DecorationDetail {
   id: number;
   name: string;
@@ -45,6 +54,7 @@ interface DecorationDetail {
   review_count?: number;
   is_deals: boolean;
   images?: { id: number; image: string }[];
+  free_items?: FreeItem[];
   advantages?: Advantage[];
   terms?: Term[];
   faqs?: FAQ[];
@@ -450,6 +460,31 @@ export default function DecorationDetailPage() {
                     </ul>
                   ) : (
                     <p className="text-gray-500 italic">Belum ada fitur & keunggulan yang ditambahkan</p>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Include Jasa</h3>
+                  {decoration.free_items && decoration.free_items.length > 0 ? (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                      <ul className="space-y-3">
+                        {decoration.free_items.map((item) => (
+                          <li key={item.id} className="flex items-start gap-3">
+                            <span className="text-green-600 mt-1 text-lg">✓</span>
+                            <div className="flex-1">
+                              <span className="font-semibold text-gray-900">{item.item_name}</span>
+                              {item.description && (
+                                <p className="text-gray-600 text-sm mt-1">{item.description}</p>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+                      <p className="text-gray-500 italic">Belum ada jasa tambahan yang disertakan</p>
+                    </div>
                   )}
                 </div>
 

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface VendorCard {
   id: number;
@@ -46,6 +47,15 @@ export default function VendorSection({ title, description, vendors }: VendorSec
     scrollContainerRef.current.scrollLeft = scrollLeft - walk;
   };
 
+  // Generate slug from vendor name
+  const generateSlug = (vendor: VendorCard) => {
+    const nameSlug = vendor.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return `${vendor.id}-${nameSlug}`;
+  };
+
   return (
     <section className="bg-white py-8 mb-5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -66,9 +76,10 @@ export default function VendorSection({ title, description, vendors }: VendorSec
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {vendors.map((vendor) => (
-            <div
+            <Link
               key={vendor.id}
-              className="flex-none w-64"
+              href={`/vendor/${generateSlug(vendor)}`}
+              className="flex-none w-64 group cursor-pointer"
             >
               {/* Image */}
               <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-3">
@@ -76,13 +87,14 @@ export default function VendorSection({ title, description, vendors }: VendorSec
                   src={vendor.image}
                   alt={vendor.name}
                   fill
-                  className="object-cover"
+                  className="object-cover group-hover:scale-110 transition-transform duration-300"
                 />
+                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
               </div>
 
               {/* Content */}
               <div>
-                <h3 className="text-base font-bold text-gray-900 mb-1">
+                <h3 className="text-base font-bold text-gray-900 mb-1 group-hover:text-purple-600 transition-colors">
                   {vendor.name}
                 </h3>
                 
@@ -106,7 +118,7 @@ export default function VendorSection({ title, description, vendors }: VendorSec
                 {/* Category */}
                 <p className="text-xs text-gray-500">{vendor.category}</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

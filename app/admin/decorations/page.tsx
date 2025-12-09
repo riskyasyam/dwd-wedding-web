@@ -445,19 +445,19 @@ export default function DecorationsPage() {
                        <FaImage className="mr-1" /> Gallery ({decoration.images?.length || 0})
                     </GradientButton>
                     <GradientButton variant="secondary" onClick={() => handleManageFreeItems(decoration)} className="text-xs py-1.5">
-                       <FaGift className="mr-1" /> Items
+                       <FaGift className="mr-1" /> Free Jasa
                     </GradientButton>
                     <GradientButton variant="secondary" onClick={() => {
                       setEditingDecoration(decoration);
                       setShowAdvantagesModal(true);
                     }} className="text-xs py-1.5">
-                       <FaCheckCircle className="mr-1" /> Advantages
+                       <FaCheckCircle className="mr-1" /> Keunggulan
                     </GradientButton>
                     <GradientButton variant="secondary" onClick={() => {
                       setEditingDecoration(decoration);
                       setShowTermsModal(true);
                     }} className="text-xs py-1.5">
-                       <FaFileContract className="mr-1" /> Terms
+                       <FaFileContract className="mr-1" /> Ketentuan
                     </GradientButton>
                     <GradientButton variant="secondary" onClick={() => {
                       setEditingDecoration(decoration);

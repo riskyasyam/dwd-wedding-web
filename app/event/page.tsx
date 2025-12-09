@@ -73,6 +73,15 @@ export default function EventPage() {
     return `${startStr} – ${endStr}`;
   };
 
+  // Generate slug from event
+  const generateSlug = (event: Event) => {
+    const titleSlug = event.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return `${event.id}-${titleSlug}`;
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -157,18 +166,29 @@ export default function EventPage() {
 
                     {/* BUTTON */}
                     {event.link_url ? (
-                      <a 
-                        href={event.link_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-4 px-5 py-2 rounded-lg bg-[#D3A0D2] text-white font-semibold hover:bg-[#caa3e3] transition text-center"
+                      <div className="flex gap-3 mt-4">
+                        <Link 
+                          href={`/event/${generateSlug(event)}`}
+                          className="flex-1 px-5 py-2 rounded-lg border-2 border-[#D3A0D2] text-[#D3A0D2] font-semibold hover:bg-[#D3A0D2] hover:text-white transition text-center"
+                        >
+                          Lihat Detail
+                        </Link>
+                        <a 
+                          href={event.link_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 px-5 py-2 rounded-lg bg-[#D3A0D2] text-white font-semibold hover:bg-[#caa3e3] transition text-center"
+                        >
+                          RSVP Event
+                        </a>
+                      </div>
+                    ) : (
+                      <Link 
+                        href={`/event/${generateSlug(event)}`}
+                        className="block mt-4 px-5 py-2 rounded-lg bg-[#D3A0D2] text-white font-semibold hover:bg-[#caa3e3] transition text-center"
                       >
                         Lihat Selengkapnya
-                      </a>
-                    ) : (
-                      <button className="mt-4 px-5 py-2 rounded-lg bg-[#D3A0D2] text-white font-semibold hover:bg-[#caa3e3] transition">
-                        Lihat Selengkapnya
-                      </button>
+                      </Link>
                     )}
                   </div>
                 </div>

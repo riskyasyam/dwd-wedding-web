@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { FiHome, FiShoppingBag, FiUser, FiLogOut, FiAlertCircle } from 'react-icons/fi';
+import { FiHome, FiShoppingBag, FiUser, FiLogOut, FiAlertCircle, FiHeart } from 'react-icons/fi';
 import { authService } from '@/lib/auth';
 
 interface CustomerSidebarProps {
@@ -36,8 +36,8 @@ export default function CustomerSidebar({ user }: CustomerSidebarProps) {
   };
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: FiHome, href: '/customer/dashboard' },
     { id: 'orders', label: 'My Orders', icon: FiShoppingBag, href: '/customer/orders' },
+    { id: 'saved-inspirations', label: 'Saved Inspirations', icon: FiHeart, href: '/customer/saved-inspirations' },
     { id: 'profile', label: 'Profile', icon: FiUser, href: '/customer/profile' },
   ];
 

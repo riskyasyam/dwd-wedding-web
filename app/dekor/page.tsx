@@ -53,7 +53,14 @@ export default function DekorPage() {
         const response = await api.get('/public/decorations', { params });
         const data = response.data.data;
         
-        setDecorations(data.data || []);
+        // Convert rating from string to number
+        const decorationsWithRating = (data.data || []).map((item: any) => ({
+          ...item,
+          rating: parseFloat(item.rating) || 0,
+          review_count: parseInt(item.review_count) || 0
+        }));
+        
+        setDecorations(decorationsWithRating);
         setTotalPages(data.last_page || 1);
       } catch (error: any) {
         console.error('Failed to fetch decorations:', {

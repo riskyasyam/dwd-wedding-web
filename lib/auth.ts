@@ -27,6 +27,8 @@ export interface User {
 export interface AuthResponse {
   user: User;
   token: string;
+  expires_in?: number; // Token expiration in seconds (e.g., 600 for 10 minutes)
+  message?: string;
 }
 
 export const authService = {
@@ -35,6 +37,12 @@ export const authService = {
     const response = await api.post<AuthResponse>('/auth/register', data);
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
+      
+      // Store token expiration time if provided by backend
+      if (response.data.expires_in) {
+        const expiresAt = Date.now() + (response.data.expires_in * 1000);
+        localStorage.setItem('token_expires_at', expiresAt.toString());
+      }
     }
     return response.data;
   },
@@ -44,6 +52,13 @@ export const authService = {
     const response = await api.post<AuthResponse>('/auth/login', data);
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
+      
+      // Store token expiration time if provided by backend
+      if (response.data.expires_in) {
+        const expiresAt = Date.now() + (response.data.expires_in * 1000);
+        localStorage.setItem('token_expires_at', expiresAt.toString());
+        console.log(`Token will expire at: ${new Date(expiresAt).toLocaleString()}`);
+      }
     }
     return response.data;
   },
@@ -52,6 +67,8 @@ export const authService = {
   async logout(): Promise<void> {
     await api.post('/auth/logout');
     localStorage.removeItem('token');
+    localStorage.removeItem('token_expires_at');
+    localStorage.removeItem('user');
   },
 
   // Get authenticated user

@@ -214,6 +214,42 @@ export default function OrdersPage() {
     return matchesSearch && matchesStatus;
   });
 
+  // Group orders by date
+  const groupOrdersByDate = (orders: Order[]) => {
+    const grouped: { [key: string]: Order[] } = {};
+    
+    orders.forEach((order) => {
+      const date = new Date(order.created_at);
+      const dateKey = date.toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(order);
+    });
+    
+    // Sort dates in descending order (newest first)
+    const sortedKeys = Object.keys(grouped).sort((a, b) => {
+      const dateA = grouped[a][0].created_at;
+      const dateB = grouped[b][0].created_at;
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
+    
+    return sortedKeys.map(dateKey => ({
+      date: dateKey,
+      dayName: new Date(grouped[dateKey][0].created_at).toLocaleDateString('id-ID', { weekday: 'long' }),
+      orders: grouped[dateKey].sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+    }));
+  };
+
+  const groupedOrders = groupOrdersByDate(filteredOrders);
+
   // Helper untuk warna status badge
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -323,66 +359,80 @@ export default function OrdersPage() {
                 </p>
             </div>
         ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left min-w-[800px]">
+            <div className="space-y-6">
+              {groupedOrders.map((group, groupIndex) => (
+                <div key={groupIndex}>
+                  {/* Date Header */}
+                  <div className="mb-4 px-2">
+                    <h3 className="text-lg font-bold text-gray-800">
+                      {group.dayName}, {group.date}
+                    </h3>
+                    <div className="h-1 w-20 bg-gradient-to-r from-purple-600 to-pink-500 rounded-full mt-2"></div>
+                  </div>
+
+                  {/* Orders Table for this date */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left min-w-[800px]">
                         <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Order Number</th>
-                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
-                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Items</th>
-                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
-                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
-                            </tr>
+                          <tr>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Time</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Order Number</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Items</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                          </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {filteredOrders.map((order) => (
-                                <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap font-mono text-xs md:text-sm font-medium text-purple-600">
-                                        {order.order_number}
-                                    </td>
-                                    <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700">
-                                        {order.first_name} {order.last_name}
-                                        <div className="text-xs text-gray-400">{order.email}</div>
-                                    </td>
-                                    <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-600">
-                                        {new Date(order.created_at).toLocaleDateString('id-ID', {
-                                          year: 'numeric',
-                                          month: 'short',
-                                          day: 'numeric'
-                                        })}
-                                    </td>
-                                    <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-600">
-                                        {order.items.length} item(s)
-                                    </td>
-                                    <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm font-bold text-gray-800">
-                                        Rp {order.total.toLocaleString('id-ID')}
-                                    </td>
-                                    <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                                        <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-bold uppercase ${getStatusColor(order.status)}`}>
-                                            {order.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-right">
-                                        <button
-                                          onClick={() => fetchUserOrderDetails(order.user_id)}
-                                          className="text-gray-400 hover:text-purple-600 transition-colors p-2 rounded-full hover:bg-purple-50 inline-block"
-                                          title="View customer orders"
-                                        >
-                                          <FaEye size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                          {group.orders.map((order) => (
+                            <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                                {new Date(order.created_at).toLocaleTimeString('id-ID', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </td>
+                              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap font-mono text-xs md:text-sm font-medium text-purple-600">
+                                {order.order_number}
+                              </td>
+                              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700">
+                                {order.first_name} {order.last_name}
+                                <div className="text-xs text-gray-400">{order.email}</div>
+                              </td>
+                              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-600">
+                                {order.items.length} item(s)
+                              </td>
+                              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm font-bold text-gray-800">
+                                Rp {order.total.toLocaleString('id-ID')}
+                              </td>
+                              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                                <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-bold uppercase ${getStatusColor(order.status)}`}>
+                                  {order.status}
+                                </span>
+                              </td>
+                              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-right">
+                                <button
+                                  onClick={() => fetchUserOrderDetails(order.user_id)}
+                                  className="text-gray-400 hover:text-purple-600 transition-colors p-2 rounded-full hover:bg-purple-50 inline-block"
+                                  title="View customer orders"
+                                >
+                                  <FaEye size={18} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
                         </tbody>
-                    </table>
+                      </table>
+                    </div>
+                    {/* Table Footer */}
+                    <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 border-t border-gray-200 flex items-center justify-between">
+                      <span className="text-xs text-gray-500">{group.orders.length} order(s) on this date</span>
+                    </div>
+                  </div>
                 </div>
-                {/* Pagination Placeholder */}
-                <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 border-t border-gray-200 flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Showing {filteredOrders.length} of {orders.length} entries</span>
-                </div>
+              ))}
             </div>
         )}
 
@@ -589,24 +639,6 @@ export default function OrdersPage() {
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Subtotal</span>
                                 <span className="font-semibold">Rp {order.subtotal.toLocaleString('id-ID')}</span>
-                              </div>
-                              {order.voucher_code && (
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Voucher ({order.voucher_code})</span>
-                                  <span className="font-semibold text-green-600">-Rp {order.voucher_discount.toLocaleString('id-ID')}</span>
-                                </div>
-                              )}
-                              {order.discount > 0 && (
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Discount</span>
-                                  <span className="font-semibold text-green-600">-Rp {order.discount.toLocaleString('id-ID')}</span>
-                                </div>
-                              )}
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600 flex items-center gap-1">
-                                  <FaTruck /> Delivery Fee
-                                </span>
-                                <span className="font-semibold">Rp {order.delivery_fee.toLocaleString('id-ID')}</span>
                               </div>
                               <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
                                 <span className="text-gray-800">Total</span>
