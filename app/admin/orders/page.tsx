@@ -125,6 +125,7 @@ export default function OrdersPage() {
   const [userOrders, setUserOrders] = useState<UserOrderDetail[]>([]);
   const [orderStatistics, setOrderStatistics] = useState<OrderStatistics | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -202,6 +203,55 @@ export default function OrdersPage() {
     setOrderStatistics(null);
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    
+    try {
+      // Build query params based on current filters
+      const params: any = {};
+      
+      if (filterStatus !== 'all') {
+        params.status = filterStatus;
+      }
+      
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
+      
+      const response = await api.get('/admin/orders/export', {
+        params,
+        responseType: 'blob',
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename with current date
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '');
+      const filename = `Orders_Report_${dateStr}_${timeStr}.xlsx`;
+      link.setAttribute('download', filename);
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      console.log('Export successful!');
+    } catch (error: any) {
+      console.error('Export failed:', error);
+      alert('Failed to export orders. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Filter orders based on search and status
   const filteredOrders = (Array.isArray(orders) ? orders : []).filter((order) => {
     const matchesSearch = 
@@ -262,11 +312,12 @@ export default function OrdersPage() {
   };
 
   // Custom Button Component
-  const GradientButton = ({ children, onClick, className = '', type = 'button' }: any) => (
+  const GradientButton = ({ children, onClick, className = '', type = 'button', disabled = false }: any) => (
     <button 
       type={type} 
       onClick={onClick} 
-      className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 transform hover:-translate-y-0.5 shadow-sm hover:shadow-md flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 border-none ${className}`}
+      disabled={disabled}
+      className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 transform hover:-translate-y-0.5 shadow-sm hover:shadow-md flex items-center justify-center bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 border-none ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     >
       {children}
     </button>
@@ -328,13 +379,15 @@ export default function OrdersPage() {
                         >
                             <option value="all">All Status</option>
                             <option value="pending">Pending</option>
-                            <option value="processing">Processing</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
+                            <option value="paid">Paid</option>
                         </select>
                     </div>
-                    <GradientButton className="w-full md:w-auto">
-                        <FaDownload className="mr-2" /> Export
+                    <GradientButton 
+                        onClick={handleExport} 
+                        className="w-full md:w-auto"
+                        disabled={isExporting}
+                    >
+                        <FaDownload className="mr-2" /> {isExporting ? 'Exporting...' : 'Export to Excel'}
                     </GradientButton>
                 </div>
             </div>
