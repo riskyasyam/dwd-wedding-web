@@ -27,6 +27,12 @@ interface Order {
   discount: number;
   delivery_fee: number;
   total: number;
+  payment_type?: 'full' | 'dp';
+  dp_amount?: number;
+  remaining_amount?: number;
+  dp_paid_at?: string | null;
+  remaining_paid_at?: string | null;
+  full_paid_at?: string | null;
   status: string;
   payment_status: string;
   notes: string | null;
@@ -62,6 +68,12 @@ interface UserOrderDetail {
   discount: number;
   delivery_fee: number;
   total: number;
+  payment_type?: 'full' | 'dp';
+  dp_amount?: number;
+  remaining_amount?: number;
+  dp_paid_at?: string | null;
+  remaining_paid_at?: string | null;
+  full_paid_at?: string | null;
   status: string;
   payment_method: string;
   created_at: string;
@@ -121,9 +133,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [userOrders, setUserOrders] = useState<UserOrderDetail[]>([]);
-  const [orderStatistics, setOrderStatistics] = useState<OrderStatistics | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -172,35 +182,14 @@ export default function OrdersPage() {
     }
   };
 
-  const fetchUserOrderDetails = async (userId: number) => {
-    try {
-      setLoadingDetail(true);
-      setShowDetailModal(true);
-      setSelectedUserId(userId);
-      
-      const response = await api.get(`/admin/users/${userId}/orders`);
-      
-      console.log('User orders response:', response.data);
-      
-      if (response.data.success) {
-        const ordersData = response.data.data?.data || [];
-        setUserOrders(Array.isArray(ordersData) ? ordersData : []);
-        setOrderStatistics(response.data.statistics || null);
-      }
-    } catch (error) {
-      console.error('Error fetching user order details:', error);
-      setUserOrders([]);
-      setOrderStatistics(null);
-    } finally {
-      setLoadingDetail(false);
-    }
+  const fetchOrderDetail = async (order: Order) => {
+    setSelectedOrder(order);
+    setShowDetailModal(true);
   };
 
   const closeModal = () => {
     setShowDetailModal(false);
-    setSelectedUserId(null);
-    setUserOrders([]);
-    setOrderStatistics(null);
+    setSelectedOrder(null);
   };
 
   const handleExport = async () => {
@@ -305,6 +294,7 @@ export default function OrdersPage() {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-700';
       case 'paid': return 'bg-blue-100 text-blue-700';
+      case 'dp_paid': return 'bg-purple-100 text-purple-700';
       case 'failed': return 'bg-red-100 text-red-700';
       case 'cancelled': return 'bg-red-100 text-red-700';
       default: return 'bg-yellow-100 text-yellow-700'; // pending
@@ -379,7 +369,8 @@ export default function OrdersPage() {
                         >
                             <option value="all">All Status</option>
                             <option value="pending">Pending</option>
-                            <option value="paid">Paid</option>
+                            <option value="dp_paid">DP Paid (Belum Lunas)</option>
+                            <option value="paid">Paid (Lunas)</option>
                         </select>
                     </div>
                     <GradientButton 
@@ -433,7 +424,9 @@ export default function OrdersPage() {
                             <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Order Number</th>
                             <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
                             <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Items</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Payment</th>
                             <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">DP/Remaining</th>
                             <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                             <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                           </tr>
@@ -457,19 +450,40 @@ export default function OrdersPage() {
                               <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-600">
                                 {order.items.length} item(s)
                               </td>
+                              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm">
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${order.payment_type === 'dp' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
+                                  {order.payment_type === 'dp' ? 'DP' : 'FULL'}
+                                </span>
+                              </td>
                               <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm font-bold text-gray-800">
                                 Rp {order.total.toLocaleString('id-ID')}
                               </td>
+                              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-600">
+                                {order.payment_type === 'dp' ? (
+                                  <div className="space-y-0.5">
+                                    <div className="text-xs">
+                                      <span className="text-green-600 font-semibold">DP:</span> Rp {(order.dp_amount || 0).toLocaleString('id-ID')}
+                                    </div>
+                                    {order.status === 'dp_paid' && (
+                                      <div className="text-xs">
+                                        <span className="text-orange-600 font-semibold">Sisa:</span> Rp {(order.remaining_amount || 0).toLocaleString('id-ID')}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
                               <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
                                 <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-bold uppercase ${getStatusColor(order.status)}`}>
-                                  {order.status}
+                                  {order.status === 'dp_paid' ? 'DP PAID' : order.status}
                                 </span>
                               </td>
                               <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-right">
                                 <button
-                                  onClick={() => fetchUserOrderDetails(order.user_id)}
+                                  onClick={() => fetchOrderDetail(order)}
                                   className="text-gray-400 hover:text-purple-600 transition-colors p-2 rounded-full hover:bg-purple-50 inline-block"
-                                  title="View customer orders"
+                                  title="View order details"
                                 >
                                   <FaEye size={18} />
                                 </button>
@@ -490,15 +504,18 @@ export default function OrdersPage() {
         )}
 
         {/* Order Detail Modal */}
-        {showDetailModal && (
+        {showDetailModal && selectedOrder && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
               {/* Modal Header */}
               <div className="bg-gradient-to-r from-pink-500 to-purple-600 px-6 py-4 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                  <FaUser className="text-white" />
-                  Customer Order History
-                </h2>
+                <div>
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <FaReceipt className="text-white" />
+                    Order Details
+                  </h2>
+                  <p className="text-white/80 text-sm mt-1">Order #{selectedOrder.order_number}</p>
+                </div>
                 <button
                   onClick={closeModal}
                   className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all"
@@ -509,205 +526,237 @@ export default function OrdersPage() {
 
               {/* Modal Body */}
               <div className="flex-1 overflow-y-auto p-6">
-                {loadingDetail ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                {/* Order Status & Payment Type */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-xs text-gray-500 mb-1">Status</p>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase inline-block ${getStatusColor(selectedOrder.status)}`}>
+                      {selectedOrder.status === 'dp_paid' ? 'DP PAID - BELUM LUNAS' : selectedOrder.status}
+                    </span>
                   </div>
-                ) : userOrders.length === 0 ? (
-                  <div className="text-center py-12">
-                    <FaBoxOpen className="text-gray-300 text-6xl mx-auto mb-4" />
-                    <p className="text-gray-500">No orders found for this customer</p>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-xs text-gray-500 mb-1">Payment Type</p>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold inline-block ${selectedOrder.payment_type === 'dp' ? 'bg-purple-100 text-purple-700' : 'bg-gray-200 text-gray-700'}`}>
+                      {selectedOrder.payment_type === 'dp' ? 'DOWN PAYMENT (DP)' : 'FULL PAYMENT'}
+                    </span>
                   </div>
-                ) : (
-                  <>
-                    {/* Customer Info & Statistics */}
-                    {userOrders[0] && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        {/* Customer Info Card */}
-                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-100">
-                          <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <FaUser className="text-purple-600" />
-                            Customer Information
-                          </h3>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm">
-                              <FaUser className="text-gray-400" />
-                              <span className="font-semibold text-gray-700">{userOrders[0].user.name}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <FaEnvelope className="text-gray-400" />
-                              <span className="text-gray-600">{userOrders[0].user.email}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <FaPhone className="text-gray-400" />
-                              <span className="text-gray-600">{userOrders[0].user.phone}</span>
-                            </div>
-                          </div>
-                        </div>
+                </div>
 
-                        {/* Delivery Address Card */}
-                        <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-xl p-5 border border-green-100">
-                          <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <FaMapMarkerAlt className="text-green-600" />
-                            Latest Delivery Address
-                          </h3>
-                          <div className="space-y-1.5 text-sm">
-                            <p className="font-semibold text-gray-700">{userOrders[0].first_name} {userOrders[0].last_name}</p>
-                            <p className="text-gray-600 flex items-start gap-2">
-                              <FaPhone className="text-gray-400 mt-1 flex-shrink-0" />
-                              <span>{userOrders[0].phone}</span>
-                            </p>
-                            <p className="text-gray-600 flex items-start gap-2">
-                              <FaMapMarkerAlt className="text-gray-400 mt-1 flex-shrink-0" />
-                              <span className="leading-relaxed">
-                                {userOrders[0].address}<br />
-                                {userOrders[0].sub_district}, {userOrders[0].district}<br />
-                                {userOrders[0].city} {userOrders[0].postal_code}
-                              </span>
-                            </p>
-                            {userOrders[0].notes && (
-                              <p className="text-xs text-gray-500 italic bg-white p-2 rounded mt-2">
-                                Note: {userOrders[0].notes}
+                {/* DP Payment Info */}
+                {selectedOrder.payment_type === 'dp' && (
+                  <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-5 mb-6">
+                    <h3 className="text-lg font-bold text-purple-900 mb-4 flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
+                        <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd"/>
+                      </svg>
+                      Down Payment Information
+                    </h3>
+                    
+                    {/* Total */}
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-purple-800">Total Order Amount:</span>
+                        <span className="text-lg font-bold text-gray-900">Rp {selectedOrder.total.toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Payment Timeline */}
+                    <div className="space-y-3">
+                      {/* DP Payment */}
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                              <span className="text-sm font-semibold text-green-800">DP Dibayar ✓</span>
+                            </div>
+                            {selectedOrder.dp_paid_at && (
+                              <p className="text-xs text-green-700 ml-4">
+                                {new Date(selectedOrder.dp_paid_at).toLocaleDateString('id-ID', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
                               </p>
                             )}
                           </div>
+                          <span className="text-sm font-bold text-green-700">
+                            Rp {(selectedOrder.dp_amount || 0).toLocaleString('id-ID')}
+                          </span>
                         </div>
-
-                        {/* Statistics Card */}
-                        {orderStatistics && (
-                          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
-                            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                              <FaReceipt className="text-blue-600" />
-                              Order Statistics
-                            </h3>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <p className="text-xs text-gray-500">Total Orders</p>
-                                <p className="text-2xl font-bold text-gray-800">{orderStatistics.total_orders}</p>
+                      </div>
+                      
+                      {/* Remaining Payment - Paid */}
+                      {selectedOrder.remaining_paid_at && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                <span className="text-sm font-semibold text-green-800">Sisa Dibayar ✓</span>
                               </div>
-                              <div>
-                                <p className="text-xs text-gray-500">Total Spent</p>
-                                <p className="text-2xl font-bold text-green-600">Rp {orderStatistics.total_spent.toLocaleString('id-ID')}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-gray-500">Pending</p>
-                                <p className="text-xl font-bold text-yellow-600">{orderStatistics.pending_orders}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-gray-500">Completed</p>
-                                <p className="text-xl font-bold text-green-600">{orderStatistics.completed_orders}</p>
-                              </div>
+                              <p className="text-xs text-green-700 ml-4">
+                                {new Date(selectedOrder.remaining_paid_at).toLocaleDateString('id-ID', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
                             </div>
+                            <span className="text-sm font-bold text-green-700">
+                              Rp {((selectedOrder.total || 0) - (selectedOrder.dp_amount || 0)).toLocaleString('id-ID')}
+                            </span>
                           </div>
+                        </div>
+                      )}
+                      
+                      {/* Remaining Payment - Pending */}
+                      {!selectedOrder.remaining_paid_at && selectedOrder.remaining_amount && selectedOrder.remaining_amount > 0 && (
+                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></span>
+                                <span className="text-sm font-semibold text-orange-800">Sisa Pembayaran</span>
+                              </div>
+                              <p className="text-xs text-orange-700 ml-4">Menunggu pembayaran customer</p>
+                            </div>
+                            <span className="text-sm font-bold text-orange-600">
+                              Rp {selectedOrder.remaining_amount.toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Payment Status Badge */}
+                    <div className="border-t border-purple-200 pt-4 mt-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-purple-900">Payment Status:</span>
+                        {selectedOrder.remaining_paid_at ? (
+                          <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                            ✓ FULLY PAID (LUNAS)
+                          </span>
+                        ) : selectedOrder.status === 'dp_paid' ? (
+                          <span className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold">
+                            🔔 WAITING FOR REMAINING
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold">
+                            PENDING
+                          </span>
                         )}
                       </div>
-                    )}
-
-                    {/* Orders List */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                        <FaShoppingCart className="text-purple-600" />
-                        Order History ({userOrders.length})
-                      </h3>
-                      
-                      {userOrders.map((order) => (
-                        <div key={order.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
-                          {/* Order Header */}
-                          <div className="bg-gray-50 px-5 py-3 border-b border-gray-200 flex justify-between items-center">
-                            <div className="flex items-center gap-4">
-                              <span className="font-mono font-bold text-purple-600">{order.order_number}</span>
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getStatusColor(order.status)}`}>
-                                {order.status}
-                              </span>
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {new Date(order.created_at).toLocaleDateString('id-ID', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Order Items */}
-                          <div className="p-5">
-                            <div className="space-y-3 mb-4">
-                              {order.items.map((item) => {
-                                // Debug: Check item data
-                                console.log('Order Item Data:', {
-                                  decoration_name: item.decoration.name,
-                                  base_price: item.base_price,
-                                  discount: item.discount,
-                                  final_price: item.price
-                                });
-                                
-                                return (
-                                <div key={item.id} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
-                                  {item.decoration.images[0] && (
-                                    <img
-                                      src={`http://localhost:8000${item.decoration.images[0].image_url}`}
-                                      alt={item.decoration.name}
-                                      className="w-20 h-20 object-cover rounded-lg"
-                                      onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.style.display = 'none';
-                                      }}
-                                    />
-                                  )}
-                                  <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-800">{item.decoration.name}</h4>
-                                    <p className="text-xs text-gray-500 capitalize">
-                                      Type: <span className="font-medium">{item.type}</span> • Qty: {item.quantity}
-                                    </p>
-                                    {item.discount > 0 && (
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-xs line-through text-gray-400">
-                                          Rp {item.base_price.toLocaleString('id-ID')}
-                                        </span>
-                                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">
-                                          -Rp {item.discount.toLocaleString('id-ID')}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="text-right">
-                                    {item.discount > 0 ? (
-                                      <>
-                                        <p className="text-xs line-through text-gray-400">Rp {item.base_price.toLocaleString('id-ID')}</p>
-                                        <p className="font-bold text-gray-800">Rp {item.price.toLocaleString('id-ID')}</p>
-                                      </>
-                                    ) : (
-                                      <p className="font-bold text-gray-800">Rp {item.price.toLocaleString('id-ID')}</p>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                              })}
-                            </div>
-
-                            {/* Order Summary */}
-                            <div className="border-t border-gray-200 pt-4 space-y-2">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Subtotal</span>
-                                <span className="font-semibold">Rp {order.subtotal.toLocaleString('id-ID')}</span>
-                              </div>
-                              <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
-                                <span className="text-gray-800">Total</span>
-                                <span className="text-purple-600">Rp {order.total.toLocaleString('id-ID')}</span>
-                              </div>
-                              <div className="flex justify-between text-sm text-gray-500">
-                                <span>Payment Method</span>
-                                <span className="font-medium capitalize">{order.payment_method}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
                     </div>
-                  </>
+                  </div>
                 )}
+
+                {/* Customer & Shipping Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {/* Customer Info */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="text-md font-bold text-blue-900 mb-3 flex items-center gap-2">
+                      <FaUser className="text-blue-600" />
+                      Customer Information
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <FaUser className="text-gray-400" />
+                        <span className="font-semibold">{selectedOrder.first_name} {selectedOrder.last_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FaEnvelope className="text-gray-400" />
+                        <span className="text-gray-600">{selectedOrder.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FaPhone className="text-gray-400" />
+                        <span className="text-gray-600">{selectedOrder.phone}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Shipping Address */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h3 className="text-md font-bold text-green-900 mb-3 flex items-center gap-2">
+                      <FaMapMarkerAlt className="text-green-600" />
+                      Shipping Address
+                    </h3>
+                    <div className="text-sm text-gray-700 space-y-1">
+                      <p className="font-semibold">{selectedOrder.address}</p>
+                      <p>{selectedOrder.sub_district}, {selectedOrder.district}</p>
+                      <p>{selectedOrder.city} - {selectedOrder.postal_code}</p>
+                      {selectedOrder.notes && (
+                        <p className="text-xs bg-white p-2 rounded mt-2 italic text-gray-600">
+                          Note: {selectedOrder.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Items */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-6">
+                  <h3 className="text-md font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <FaShoppingCart className="text-purple-600" />
+                    Order Items ({selectedOrder.items.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {selectedOrder.items.map((item, idx) => (
+                      <div key={idx} className="bg-white p-3 rounded-lg flex justify-between items-center">
+                        <div>
+                          <p className="font-semibold text-gray-900">{item.decoration_name}</p>
+                          <p className="text-xs text-gray-500">
+                            Type: <span className="capitalize font-medium">{item.type}</span> • Qty: {item.quantity}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-900">Rp {item.price.toLocaleString('id-ID')}</p>
+                          <p className="text-xs text-gray-500">per item</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pricing Summary */}
+                <div className="bg-white border-2 border-gray-300 rounded-lg p-5">
+                  <h3 className="text-md font-bold text-gray-900 mb-4">Pricing Summary</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotal</span>
+                      <span className="font-semibold">Rp {selectedOrder.subtotal.toLocaleString('id-ID')}</span>
+                    </div>
+                    {selectedOrder.voucher_discount > 0 && (
+                      <>
+                        <div className="flex justify-between text-green-600">
+                          <span>Voucher Discount ({selectedOrder.voucher_code})</span>
+                          <span className="font-semibold">- Rp {selectedOrder.voucher_discount.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-gray-200 pt-2">
+                          <span className="text-gray-600">After Discount</span>
+                          <span className="font-semibold">Rp {(selectedOrder.subtotal - selectedOrder.voucher_discount).toLocaleString('id-ID')}</span>
+                        </div>
+                      </>
+                    )}
+                    <div className="border-t-2 border-gray-300 pt-3 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold text-gray-900">Total Order</span>
+                        <span className="text-2xl font-bold text-purple-600">Rp {selectedOrder.total.toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Metadata */}
+                <div className="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-500 space-y-1">
+                  <p><span className="font-semibold">Order Created:</span> {new Date(selectedOrder.created_at).toLocaleString('id-ID')}</p>
+                  <p><span className="font-semibold">Last Updated:</span> {new Date(selectedOrder.updated_at).toLocaleString('id-ID')}</p>
+                </div>
               </div>
 
               {/* Modal Footer */}

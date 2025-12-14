@@ -53,7 +53,8 @@ export default function LoginPage() {
       if (response.user.role === 'admin') {
         router.push('/admin/dashboard');
       } else {
-        router.push('/customer/dashboard');
+        // Redirect customer langsung ke My Orders
+        router.push('/customer/orders');
       }
     } catch (error: any) {
       if (error.response?.data?.errors) {

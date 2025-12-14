@@ -19,6 +19,7 @@ interface CartItem {
     name: string;
     slug: string;
     final_price: number;
+    minimum_dp_percentage?: number;
     images: Array<{ id: number; image: string }>;
   };
 }
@@ -59,6 +60,7 @@ export default function CheckoutPage() {
   const [processing, setProcessing] = useState(false);
   const [orderData, setOrderData] = useState<any>(null);
   const [voucherDiscount, setVoucherDiscount] = useState(0);
+  const [paymentType, setPaymentType] = useState<'full' | 'dp'>('full');
   
   const [formData, setFormData] = useState<CheckoutFormData>({
     first_name: '',
@@ -178,6 +180,22 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Confirm payment details
+    const paymentConfirmMessage = paymentType === 'dp' 
+      ? `💰 KONFIRMASI PEMBAYARAN DP\n\n` +
+        `Total Harga: Rp ${calculateTotal().toLocaleString('id-ID')}\n` +
+        `Pembayaran DP (${getMinimumDPPercentage()}%): Rp ${calculateDPAmount().toLocaleString('id-ID')}\n` +
+        `Sisa Pembayaran: Rp ${(calculateTotal() - calculateDPAmount()).toLocaleString('id-ID')}\n\n` +
+        `Anda akan membayar DP sebesar Rp ${calculateDPAmount().toLocaleString('id-ID')}\n\n` +
+        `Lanjutkan dengan pembayaran DP?`
+      : `💰 KONFIRMASI PEMBAYARAN FULL\n\n` +
+        `Total Pembayaran: Rp ${calculateTotal().toLocaleString('id-ID')}\n\n` +
+        `Lanjutkan dengan pembayaran penuh?`;
+    
+    if (!window.confirm(paymentConfirmMessage)) {
+      return;
+    }
+
     // Warn if voucher is applied
     if (voucherDiscount > 0 && formData.voucher_code) {
       const confirmVoucher = window.confirm(
@@ -217,6 +235,7 @@ export default function CheckoutPage() {
         sub_district: formData.sub_district,
         postal_code: formData.postal_code,
         notes: formData.notes,
+        payment_type: paymentType,
       };
       
       // ONLY add voucher_code if discount is active
@@ -228,6 +247,10 @@ export default function CheckoutPage() {
       }
       
       console.log('=== CHECKOUT REQUEST DATA ===');
+      console.log('Payment Type:', paymentType);
+      console.log('Total Amount:', calculateTotal());
+      console.log('DP Amount (if DP):', calculateDPAmount());
+      console.log('Payment Amount to backend:', calculatePaymentAmount());
       console.log('Sending to backend:', JSON.stringify(checkoutData, null, 2));
       console.log('Cart subtotal:', cartData?.subtotal);
       console.log('Voucher discount:', voucherDiscount);
@@ -242,10 +265,47 @@ export default function CheckoutPage() {
       if (response.data.success) {
         const { snap_token, order } = response.data.data;
         
+        // Validate backend response
+        console.log('📦 Backend Response Details:');
+        console.log('Order ID:', order?.id);
+        console.log('Order Number:', order?.order_number);
+        console.log('Payment Type:', order?.payment_type);
+        console.log('Total:', order?.total);
+        console.log('DP Amount:', order?.dp_amount);
+        console.log('Remaining Amount:', order?.remaining_amount);
+        console.log('Snap Token:', snap_token ? 'Received ✓' : 'Missing ✗');
+        
         if (!snap_token) {
           alert('❌ Backend tidak mengembalikan snap_token.\n\nSilakan cek konfigurasi Midtrans di backend.');
           setProcessing(false);
           return;
+        }
+        
+        // Warn if payment_type mismatch
+        if (order?.payment_type !== paymentType) {
+          console.warn('⚠️ PAYMENT TYPE MISMATCH!');
+          console.warn('Frontend sent:', paymentType);
+          console.warn('Backend stored:', order?.payment_type);
+          alert(
+            '⚠️ WARNING: Payment type mismatch\n\n' +
+            `Frontend: ${paymentType}\n` +
+            `Backend: ${order?.payment_type}\n\n` +
+            'Payment may proceed with wrong amount!'
+          );
+        }
+        
+        // Warn if DP but amount seems wrong
+        if (paymentType === 'dp' && order?.dp_amount) {
+          const expectedDPAmount = calculateDPAmount();
+          const backendDPAmount = order.dp_amount;
+          const diff = Math.abs(expectedDPAmount - backendDPAmount);
+          
+          if (diff > 100) { // Allow small rounding differences
+            console.warn('⚠️ DP AMOUNT MISMATCH!');
+            console.warn('Frontend calculated:', expectedDPAmount);
+            console.warn('Backend stored:', backendDPAmount);
+            console.warn('Difference:', diff);
+          }
         }
         
         // Store order data
@@ -319,6 +379,30 @@ export default function CheckoutPage() {
     alert('Voucher removed. Total updated to original price.');
   };
 
+  const getMinimumDPPercentage = () => {
+    if (!cartData || cartData.cart.items.length === 0) return 0;
+    // Get minimum_dp_percentage from first decoration (assuming single item checkout)
+    return cartData.cart.items[0].decoration.minimum_dp_percentage || 0;
+  };
+
+  const calculateDPAmount = () => {
+    const total = calculateTotal();
+    const dpPercentage = getMinimumDPPercentage();
+    if (dpPercentage === 0) return 0;
+    return Math.ceil(total * dpPercentage / 100);
+  };
+
+  const calculatePaymentAmount = () => {
+    if (paymentType === 'dp') {
+      return calculateDPAmount();
+    }
+    return calculateTotal();
+  };
+
+  const isDPAvailable = () => {
+    return getMinimumDPPercentage() > 0;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -375,6 +459,44 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {/* Payment Type Selection */}
+            {isDPAvailable() && (
+              <div className="mb-6 bg-white rounded-lg p-4 shadow-sm">
+                <h3 className="text-sm font-bold text-gray-900 mb-3">Pilih Metode Pembayaran</h3>
+                <div className="space-y-2">
+                  <label className="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors" style={{ borderColor: paymentType === 'full' ? '#9A82DB' : '#e5e7eb' }}>
+                    <input
+                      type="radio"
+                      name="paymentType"
+                      value="full"
+                      checked={paymentType === 'full'}
+                      onChange={(e) => setPaymentType(e.target.value as 'full' | 'dp')}
+                      className="mt-1 text-[#9A82DB] focus:ring-[#9A82DB]"
+                    />
+                    <div className="ml-3 flex-1">
+                      <div className="font-medium text-gray-900">Bayar Penuh</div>
+                      <div className="text-sm text-gray-600">Langsung bayar full: Rp {calculateTotal().toLocaleString('id-ID')}</div>
+                    </div>
+                  </label>
+                  <label className="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors" style={{ borderColor: paymentType === 'dp' ? '#9A82DB' : '#e5e7eb' }}>
+                    <input
+                      type="radio"
+                      name="paymentType"
+                      value="dp"
+                      checked={paymentType === 'dp'}
+                      onChange={(e) => setPaymentType(e.target.value as 'full' | 'dp')}
+                      className="mt-1 text-[#9A82DB] focus:ring-[#9A82DB]"
+                    />
+                    <div className="ml-3 flex-1">
+                      <div className="font-medium text-gray-900">Bayar DP ({getMinimumDPPercentage()}%)</div>
+                      <div className="text-sm text-gray-600">DP: Rp {calculateDPAmount().toLocaleString('id-ID')}</div>
+                      <div className="text-xs text-gray-500 mt-1">Sisa: Rp {(calculateTotal() - calculateDPAmount()).toLocaleString('id-ID')}</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
+
             {/* Pricing */}
             <div className="border-t-2 border-white/30 pt-6 space-y-3">
               <div className="flex justify-between text-gray-700">
@@ -399,12 +521,26 @@ export default function CheckoutPage() {
               
               <div className="border-t border-white/30 pt-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold text-white">Total</span>
+                  <span className="text-2xl font-bold text-white">Total Harga</span>
                   <span className="text-3xl font-bold text-white">
                     Rp {calculateTotal().toLocaleString('id-ID')}
                   </span>
                 </div>
               </div>
+
+              {paymentType === 'dp' && isDPAvailable() && (
+                <div className="bg-purple-100 border border-purple-300 rounded-lg p-3 mt-3">
+                  <div className="flex justify-between items-center text-purple-900">
+                    <span className="font-medium">Bayar Sekarang (DP)</span>
+                    <span className="text-xl font-bold">
+                      Rp {calculatePaymentAmount().toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-purple-700 mt-1">
+                    Sisa pembayaran: Rp {(calculateTotal() - calculateDPAmount()).toLocaleString('id-ID')}
+                  </p>
+                </div>
+              )}
             </div>
 
             <Link

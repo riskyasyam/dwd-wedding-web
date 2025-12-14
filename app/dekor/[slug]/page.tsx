@@ -53,6 +53,7 @@ interface DecorationDetail {
   rating?: number;
   review_count?: number;
   is_deals: boolean;
+  minimum_dp_percentage?: number;
   images?: { id: number; image: string }[];
   free_items?: FreeItem[];
   advantages?: Advantage[];
@@ -365,7 +366,7 @@ export default function DecorationDetailPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4">
+            <div className="flex gap-4 mb-4">
               <button 
                 onClick={handleAddToCart}
                 disabled={addingToCart}
@@ -374,6 +375,40 @@ export default function DecorationDetailPage() {
                 {addingToCart ? 'Adding...' : 'Add to Cart'}
               </button>
             </div>
+
+            {/* DP Information */}
+            {decoration.minimum_dp_percentage && decoration.minimum_dp_percentage > 0 && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-purple-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-purple-900 mb-1">Pembayaran DP Tersedia</h4>
+                    <p className="text-sm text-purple-700 mb-2">
+                      Anda dapat membayar dengan sistem Down Payment (DP)
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-purple-600">Minimal DP</p>
+                        <p className="text-lg font-bold text-purple-900">
+                          {formatPrice(Math.ceil((decoration.final_price || decoration.base_price) * (decoration.minimum_dp_percentage / 100)))}
+                        </p>
+                        <p className="text-xs text-purple-600">({decoration.minimum_dp_percentage}% dari total)</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-purple-600">Sisa Pembayaran</p>
+                        <p className="text-sm font-semibold text-purple-800">
+                          {formatPrice((decoration.final_price || decoration.base_price) - Math.ceil((decoration.final_price || decoration.base_price) * (decoration.minimum_dp_percentage / 100)))}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
