@@ -36,7 +36,12 @@ export default function EventPage() {
             page: currentPage,
             per_page: 10,
             order_by: 'start_date',
-            order_dir: 'asc'
+            order_dir: 'asc',
+            _t: Date.now() // Cache busting
+          },
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
           }
         });
         const data = response.data.data;

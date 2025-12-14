@@ -64,7 +64,8 @@ export default function InspirasiPage() {
           page: currentPage,
           per_page: 20,
           order_by: 'created_at',
-          order_dir: 'desc'
+          order_dir: 'desc',
+          _t: Date.now() // Cache busting
         };
 
         if (selectedCountry !== "All") {
@@ -76,7 +77,13 @@ export default function InspirasiPage() {
         }
 
         // Use public endpoint (auth optional for is_saved field)
-        const response = await api.get('/public/inspirations', { params });
+        const response = await api.get('/public/inspirations', { 
+          params,
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         const data = response.data.data;
         
         setInspirations(data.data || []);
@@ -101,7 +108,14 @@ export default function InspirasiPage() {
     const fetchLocations = async () => {
       try {
         const response = await api.get('/public/inspirations', { 
-          params: { per_page: 1000 } // Get all to extract unique locations
+          params: { 
+            per_page: 1000,
+            _t: Date.now() // Cache busting
+          },
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
         });
         const data = response.data.data;
         const allInspirations = data.data || [];

@@ -40,7 +40,12 @@ export default function RecommendationSection() {
         const response = await api.get('/public/decorations', {
           params: {
             is_deals: true,
-            per_page: 10
+            per_page: 10,
+            _t: Date.now() // Cache busting
+          },
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
           }
         });
         const data = response.data.data?.data || response.data.data || [];

@@ -23,7 +23,15 @@ export default function HeroCarousel() {
   useEffect(() => {
     const fetchAdvertisements = async () => {
       try {
-        const response = await api.get('/public/advertisements');
+        const response = await api.get('/public/advertisements', {
+          params: {
+            _t: Date.now() // Cache busting
+          },
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         const ads = response.data.data || [];
         setAdvertisements(ads);
       } catch (error: any) {
@@ -125,6 +133,11 @@ export default function HeroCarousel() {
                     fill
                     className="object-cover"
                     priority={index === 0}
+                    onError={(e) => {
+                      // Handle broken image
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
                   />
                 </div>
               ))}
@@ -165,6 +178,11 @@ export default function HeroCarousel() {
                   fill
                   className="object-cover"
                   priority={index === 0}
+                  onError={(e) => {
+                    // Handle broken image
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
                 />
               </div>
             ))}

@@ -23,13 +23,16 @@ export default function VendorSectionsGroup() {
   useEffect(() => {
     const fetchVendorsByCategory = async () => {
       try {
+        const timestamp = Date.now();
+        const headers = { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' };
+        
         // Fetch all categories in parallel
         const [photo, video, makeup, attire, entertainment] = await Promise.all([
-          api.get('/public/vendors', { params: { category: 'Fotografi', per_page: 10 } }),
-          api.get('/public/vendors', { params: { category: 'Videografi', per_page: 10 } }),
-          api.get('/public/vendors', { params: { category: 'Make up / Hair & Hijab', per_page: 10 } }),
-          api.get('/public/vendors', { params: { category: 'Attire', per_page: 10 } }),
-          api.get('/public/vendors', { params: { category: 'Entertainment (Musik)', per_page: 10 } })
+          api.get('/public/vendors', { params: { category: 'Fotografi', per_page: 10, _t: timestamp }, headers }),
+          api.get('/public/vendors', { params: { category: 'Videografi', per_page: 10, _t: timestamp }, headers }),
+          api.get('/public/vendors', { params: { category: 'Make up / Hair & Hijab', per_page: 10, _t: timestamp }, headers }),
+          api.get('/public/vendors', { params: { category: 'Attire', per_page: 10, _t: timestamp }, headers }),
+          api.get('/public/vendors', { params: { category: 'Entertainment (Musik)', per_page: 10, _t: timestamp }, headers })
         ]);
 
         setPhotographyVendors(photo.data.data?.data || photo.data.data || []);

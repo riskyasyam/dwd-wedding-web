@@ -43,14 +43,21 @@ export default function DekorPage() {
         setLoading(true);
         const params: any = {
           page: currentPage,
-          per_page: 20
+          per_page: 20,
+          _t: Date.now() // Cache busting
         };
         
         if (showDeals) {
           params.is_deals = true;
         }
 
-        const response = await api.get('/public/decorations', { params });
+        const response = await api.get('/public/decorations', { 
+          params,
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         const data = response.data.data;
         
         // Convert rating from string to number
