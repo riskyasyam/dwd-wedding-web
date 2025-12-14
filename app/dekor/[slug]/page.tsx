@@ -97,7 +97,14 @@ export default function DecorationDetailPage() {
         // Try to fetch decoration detail by slug
         let decoResponse;
         try {
-          decoResponse = await api.get(`/public/decorations/${slug}`);
+          // Add cache-busting to prevent stale data
+          decoResponse = await api.get(`/public/decorations/${slug}?_t=${Date.now()}`, {
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          });
         } catch (slugError: any) {
           // If slug fails with 404, it means backend expects different format
           // Log the error for debugging
@@ -114,10 +121,17 @@ export default function DecorationDetailPage() {
 
         // Fetch reviews from API - skip if endpoint not available
         try {
-          const reviewsResponse = await api.get(`/public/decorations/${decoData.id}/reviews`);
+          // Add cache-busting to get latest reviews
+          const reviewsResponse = await api.get(`/public/decorations/${decoData.id}/reviews?_t=${Date.now()}`, {
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          });
           
           if (reviewsResponse.data.success) {
-            const reviewsData = reviewsResponse.data.data;
+          const reviewsData = reviewsResponse.data.data;
             // Ensure reviewsData is an array
             if (Array.isArray(reviewsData)) {
               setReviews(reviewsData);
@@ -552,11 +566,6 @@ export default function DecorationDetailPage() {
 
                   <div></div>
 
-                  <div className="flex justify-end">
-                    <button className="bg-black text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-800 transition">
-                      Write a Review
-                    </button>
-                  </div>
                 </div>
                 
                 {!Array.isArray(reviews) || reviews.length === 0 ? (

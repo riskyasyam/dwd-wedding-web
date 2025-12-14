@@ -443,11 +443,15 @@ export default function InspirasiPage() {
                           handleToggleSave(item);
                         }}
                         disabled={savingStates[item.id]}
-                        className={`absolute top-1.5 md:top-2 right-1.5 md:right-2 rounded-full p-1.5 md:p-2 shadow-md transition-all ${
-                          item.is_saved 
-                            ? 'bg-red-500 text-white' 
+                        className={`
+                          absolute top-1.5 md:top-2 right-1.5 md:right-2
+                          rounded-full p-1.5 md:p-2 shadow-md transition-all duration-200
+                          ${item.is_saved
+                            ? 'bg-red-500 text-white hover:bg-red-500'
                             : 'bg-white/90 text-gray-600 hover:bg-white'
-                        } ${savingStates[item.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          }
+                          ${savingStates[item.id] ? 'opacity-50 cursor-not-allowed' : ''}
+                        `}
                       >
                         {item.is_saved ? (
                           <svg width="18" height="18" fill="currentColor" className="md:w-5 md:h-5">

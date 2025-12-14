@@ -320,13 +320,13 @@ export default function CheckoutPage() {
         window.snap.pay(snap_token, {
           onSuccess: function(result: any) {
             console.log('Payment success:', result);
-            // Redirect to order status page for polling
-            router.push(`/orders/${order.order_number}/status`);
+            // Redirect to customer orders dashboard
+            router.push('/customer/orders');
           },
           onPending: function(result: any) {
             console.log('Payment pending:', result);
-            // Redirect to order status page for polling
-            router.push(`/orders/${order.order_number}/status`);
+            // Redirect to customer orders dashboard
+            router.push('/customer/orders');
           },
           onError: function(result: any) {
             console.error('Payment error:', result);

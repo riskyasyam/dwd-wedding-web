@@ -476,7 +476,17 @@ export default function OrdersPage() {
                               </td>
                               <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
                                 <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-bold uppercase ${getStatusColor(order.status)}`}>
-                                  {order.status === 'dp_paid' ? 'DP PAID' : order.status}
+                                  {order.status === 'dp_paid' 
+                                    ? 'DP PAID - BELUM LUNAS'
+                                    : order.status === 'paid'
+                                    ? 'FULLY PAID'
+                                    : order.status === 'processing'
+                                    ? 'PROCESSING'
+                                    : order.status === 'completed'
+                                    ? 'COMPLETED'
+                                    : order.status === 'pending'
+                                    ? 'PENDING'
+                                    : order.status.toUpperCase()}
                                 </span>
                               </td>
                               <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-right">

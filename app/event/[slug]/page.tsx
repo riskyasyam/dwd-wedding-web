@@ -35,7 +35,14 @@ export default function EventDetailPage() {
         setLoading(true);
         // Extract ID from slug (format: id-title-slug)
         const eventId = slug.split('-')[0];
-        const response = await api.get(`/public/events/${eventId}`);
+        // Add cache-busting to prevent stale data
+        const response = await api.get(`/public/events/${eventId}?_t=${Date.now()}`, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
         setEvent(response.data.data);
       } catch (error: any) {
         console.error('Failed to fetch event detail:', error);
