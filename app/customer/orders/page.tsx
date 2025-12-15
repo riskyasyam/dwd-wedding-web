@@ -345,9 +345,9 @@ export default function CustomerOrdersPage() {
                             className={`px-3 py-1 rounded-full text-xs font-semibold ${
                               order.status === 'completed'
                                 ? 'bg-green-100 text-green-700'
-                                : order.status === 'paid'
+                                : (order.status === 'paid' || (order.payment_type === 'dp' && order.dp_paid_at && order.remaining_paid_at))
                                 ? 'bg-blue-100 text-blue-700'
-                                : order.status === 'dp_paid'
+                                : (order.status === 'dp_paid' || (order.payment_type === 'dp' && order.dp_paid_at && !order.remaining_paid_at))
                                 ? 'bg-purple-100 text-purple-700'
                                 : order.status === 'processing'
                                 ? 'bg-indigo-100 text-indigo-700'
@@ -356,8 +356,12 @@ export default function CustomerOrdersPage() {
                                 : 'bg-yellow-100 text-yellow-700'
                             }`}
                           >
-                            {order.status === 'dp_paid' 
-                              ? 'DP PAID - BELUM LUNAS' 
+                            {order.status === 'completed'
+                              ? 'COMPLETED'
+                              : (order.status === 'paid' || (order.payment_type === 'dp' && order.dp_paid_at && order.remaining_paid_at))
+                              ? 'FULLY PAID'
+                              : (order.status === 'dp_paid' || (order.payment_type === 'dp' && order.dp_paid_at && !order.remaining_paid_at))
+                              ? 'DP PAID - BELUM LUNAS'
                               : order.status === 'processing'
                               ? 'PROCESSING'
                               : order.status.toUpperCase()}
@@ -415,7 +419,7 @@ export default function CustomerOrdersPage() {
                                 )}
                               </div>
                             </div>
-                            {order.payment_type === 'dp' && !order.remaining_paid_at && order.remaining_amount && order.remaining_amount > 0 && order.status !== 'pending' && (
+                            {order.payment_type === 'dp' && !order.remaining_paid_at && order.remaining_amount && order.remaining_amount > 0 && order.dp_paid_at && (
                               <button
                                 onClick={() => handlePayRemaining(order)}
                                 className="ml-3 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition text-sm font-medium shadow-sm whitespace-nowrap"
@@ -514,9 +518,9 @@ export default function CustomerOrdersPage() {
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold inline-block ${
                     selectedOrder.status === 'completed'
                       ? 'bg-green-100 text-green-700'
-                      : selectedOrder.status === 'paid'
+                      : (selectedOrder.status === 'paid' || (selectedOrder.payment_type === 'dp' && selectedOrder.dp_paid_at && selectedOrder.remaining_paid_at))
                       ? 'bg-blue-100 text-blue-700'
-                      : selectedOrder.status === 'dp_paid'
+                      : (selectedOrder.status === 'dp_paid' || (selectedOrder.payment_type === 'dp' && selectedOrder.dp_paid_at && !selectedOrder.remaining_paid_at))
                       ? 'bg-purple-100 text-purple-700'
                       : selectedOrder.status === 'processing'
                       ? 'bg-indigo-100 text-indigo-700'
@@ -524,8 +528,12 @@ export default function CustomerOrdersPage() {
                       ? 'bg-red-100 text-red-700'
                       : 'bg-yellow-100 text-yellow-700'
                   }`}>
-                    {selectedOrder.status === 'dp_paid' 
-                      ? 'DP PAID - BELUM LUNAS' 
+                    {selectedOrder.status === 'completed'
+                      ? 'COMPLETED'
+                      : (selectedOrder.status === 'paid' || (selectedOrder.payment_type === 'dp' && selectedOrder.dp_paid_at && selectedOrder.remaining_paid_at))
+                      ? 'FULLY PAID'
+                      : (selectedOrder.status === 'dp_paid' || (selectedOrder.payment_type === 'dp' && selectedOrder.dp_paid_at && !selectedOrder.remaining_paid_at))
+                      ? 'DP PAID - BELUM LUNAS'
                       : selectedOrder.status === 'processing'
                       ? 'PROCESSING'
                       : selectedOrder.status.toUpperCase()}
@@ -629,7 +637,7 @@ export default function CustomerOrdersPage() {
                   </div>
                   
                   {/* Pay Remaining Button */}
-                  {!selectedOrder.remaining_paid_at && selectedOrder.remaining_amount && selectedOrder.remaining_amount > 0 && selectedOrder.status !== 'pending' && (
+                  {!selectedOrder.remaining_paid_at && selectedOrder.remaining_amount && selectedOrder.remaining_amount > 0 && selectedOrder.dp_paid_at && (
                     <button
                       onClick={() => {
                         setShowOrderDetailModal(false);

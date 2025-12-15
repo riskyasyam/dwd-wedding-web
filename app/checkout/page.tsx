@@ -174,6 +174,69 @@ export default function CheckoutPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const pollPaymentStatus = async (orderNumber: string, maxAttempts = 10) => {
+    let attempts = 0;
+    const delayMs = 2000; // 2 seconds
+
+    const poll = async (): Promise<void> => {
+      try {
+        console.log(`🔄 Polling payment status (attempt ${attempts + 1}/${maxAttempts})...`);
+        
+        const response = await api.get(`/customer/orders/payment-status/${orderNumber}`);
+        
+        console.log('Poll response:', response.data);
+        
+        if (response.data.success) {
+          const { order_status, order } = response.data.data;
+          
+          // For DP payment, check if status is 'dp_paid'
+          if (order_status === 'dp_paid' && order.dp_paid_at) {
+            console.log('✅ DP payment berhasil! Status: dp_paid');
+            console.log('DP paid at:', order.dp_paid_at);
+            
+            // Redirect to orders page
+            router.push('/customer/orders');
+            
+            return; // Stop polling
+          }
+          
+          // For full payment, check if status is 'paid'
+          if (order_status === 'paid' && order.full_paid_at) {
+            console.log('✅ Full payment berhasil! Status: paid');
+            
+            router.push('/customer/orders');
+            
+            return; // Stop polling
+          }
+          
+          // Belum settled, poll lagi
+          attempts++;
+          if (attempts < maxAttempts) {
+            console.log(`⏳ Belum settled, polling lagi dalam ${delayMs / 1000} detik...`);
+            setTimeout(() => poll(), delayMs);
+          } else {
+            console.log('⚠️ Max polling attempts reached');
+            alert('Pembayaran sedang diproses. Silakan cek halaman Orders untuk status terbaru.');
+            router.push('/customer/orders');
+          }
+        }
+      } catch (error) {
+        console.error('Error polling payment status:', error);
+        
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(() => poll(), delayMs);
+        } else {
+          alert('Gagal mengecek status pembayaran. Mohon refresh halaman.');
+          router.push('/customer/orders');
+        }
+      }
+    };
+
+    // Start polling
+    await poll();
+  };
+
   const handleProceedToPayment = async () => {
     if (!validateForm()) {
       alert('Please fill in all required fields');
@@ -318,18 +381,30 @@ export default function CheckoutPage() {
         
         // Open Midtrans Snap popup
         window.snap.pay(snap_token, {
-          onSuccess: function(result: any) {
-            console.log('Payment success:', result);
-            // Redirect to customer orders dashboard
-            router.push('/customer/orders');
+          onSuccess: async function(result: any) {
+            console.log('✅ Payment success:', result);
+            console.log('Midtrans order_id:', result.order_id);
+            
+            // CRITICAL: Poll untuk update database
+            const orderNumber = result.order_id; // Same as backend order_number
+            
+            console.log('🔄 Starting polling for order:', orderNumber);
+            
+            // Show processing message
+            alert('✅ Pembayaran berhasil! Mohon tunggu, sistem sedang memproses...');
+            
+            // Start polling
+            await pollPaymentStatus(orderNumber);
           },
-          onPending: function(result: any) {
-            console.log('Payment pending:', result);
-            // Redirect to customer orders dashboard
-            router.push('/customer/orders');
+          onPending: async function(result: any) {
+            console.log('⏳ Payment pending:', result);
+            
+            // Try polling anyway in case it settles quickly
+            const orderNumber = result.order_id;
+            await pollPaymentStatus(orderNumber, 5); // Less attempts for pending
           },
           onError: function(result: any) {
-            console.error('Payment error:', result);
+            console.error('❌ Payment error:', result);
             alert('❌ Pembayaran gagal. Silakan coba lagi.');
             setProcessing(false);
           },
