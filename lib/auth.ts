@@ -27,58 +27,94 @@ export interface User {
 export interface AuthResponse {
   user: User;
   token: string;
-  expires_in?: number; // Token expiration in seconds (e.g., 600 for 10 minutes)
+  expires_in?: number;
   message?: string;
 }
 
 export const authService = {
-  // Register new user
+  // ===============================
+  // Register
+  // ===============================
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/register', data);
+
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
-      
-      // Store token expiration time if provided by backend
+
       if (response.data.expires_in) {
-        const expiresAt = Date.now() + (response.data.expires_in * 1000);
+        const expiresAt = Date.now() + response.data.expires_in * 1000;
         localStorage.setItem('token_expires_at', expiresAt.toString());
       }
     }
+
     return response.data;
   },
 
-  // Login user
+  // ===============================
+  // Login
+  // ===============================
   async login(data: LoginData): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/login', data);
+
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
-      
-      // Store token expiration time if provided by backend
+
       if (response.data.expires_in) {
-        const expiresAt = Date.now() + (response.data.expires_in * 1000);
+        const expiresAt = Date.now() + response.data.expires_in * 1000;
         localStorage.setItem('token_expires_at', expiresAt.toString());
-        console.log(`Token will expire at: ${new Date(expiresAt).toLocaleString()}`);
       }
     }
+
     return response.data;
   },
 
-  // Logout user
+  // ===============================
+  // Logout
+  // ===============================
   async logout(): Promise<void> {
-    await api.post('/auth/logout');
-    localStorage.removeItem('token');
-    localStorage.removeItem('token_expires_at');
-    localStorage.removeItem('user');
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // ignore error
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('token_expires_at');
+      localStorage.removeItem('user');
+    }
   },
 
+  // ===============================
   // Get authenticated user
+  // ===============================
   async getUser(): Promise<User> {
     const response = await api.get<User>('/auth/user');
     return response.data;
   },
 
-  // Check if user is logged in
+  // ===============================
+  // Check auth (SAFE)
+  // ===============================
   isAuthenticated(): boolean {
-    return !!localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    const expiresAt = localStorage.getItem('token_expires_at');
+
+    if (!token) return false;
+
+    if (expiresAt && Date.now() > Number(expiresAt)) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('token_expires_at');
+      return false;
+    }
+
+    return true;
+  },
+
+  // ===============================
+  // Clear token (helper)
+  // ===============================
+  clearToken() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('token_expires_at');
+    localStorage.removeItem('user');
   },
 };

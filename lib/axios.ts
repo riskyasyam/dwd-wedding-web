@@ -4,11 +4,13 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  }
+    Accept: 'application/json',
+  },
 });
 
-// Add token to requests
+// ===============================
+// REQUEST INTERCEPTOR
+// ===============================
 api.interceptors.request.use(config => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
@@ -19,66 +21,83 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-// Handle response errors
+// ===============================
+// RESPONSE INTERCEPTOR
+// ===============================
 api.interceptors.response.use(
   response => response,
   error => {
-    // Log error for debugging
-    console.error('API Error:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message,
-      data: error.response?.data
-    });
+    const status = error.response?.status;
+    const url = error.config?.url || '';
 
-    // Handle 401 Unauthorized (token expired or invalid)
-    if (error.response?.status === 401) {
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-      const isProtectedRoute = currentPath.startsWith('/admin') || currentPath.startsWith('/customer');
-      
-      if (isProtectedRoute && typeof window !== 'undefined') {
-        // Clear token and expiration data
+    /**
+     * 🔹 CASE 1
+     * /auth/user dipanggil Navbar
+     * 401 = USER BELUM LOGIN (NORMAL)
+     */
+    if (status === 401 && url.includes('/auth/user')) {
+      return Promise.reject(error);
+    }
+
+    /**
+     * 🔹 CASE 2
+     * Protected page (admin / customer)
+     */
+    if (status === 401 && typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      const isProtected =
+        path.startsWith('/admin') || path.startsWith('/customer');
+
+      if (isProtected) {
         localStorage.removeItem('token');
         localStorage.removeItem('token_expires_at');
         localStorage.removeItem('user');
-        
-        // Show message if token expired
-        const errorData = error.response?.data;
-        if (errorData?.error === 'token_expired') {
-          console.log('Token has expired. Redirecting to login...');
-          // You can show a toast notification here if you have a toast library
-        }
-        
-        // Redirect to login
+
         window.location.href = '/login?expired=true';
       }
     }
+
+    /**
+     * 🔹 Log error selain 401
+     */
+    if (status !== 401) {
+      console.error('API Error:', {
+        url,
+        method: error.config?.method,
+        status,
+        message: error.response?.data?.message || error.message,
+      });
+    }
+
     return Promise.reject(error);
   }
 );
 
 export default api;
 
-// Helper function to get full image URL
-export const getImageUrl = (path: string | null | undefined): string => {
+// ===============================
+// Image URL Helper
+// ===============================
+export const getImageUrl = (
+  path: string | null | undefined
+): string => {
   if (!path) return '';
-  
-  // If already full URL with correct port, return as is
+
   if (path.startsWith('http://localhost:8000') || path.startsWith('https://')) {
     return path;
   }
-  
-  // Fix incorrect localhost URL (without port)
+
   if (path.startsWith('http://localhost/')) {
-    const correctBaseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-    return path.replace('http://localhost', correctBaseURL);
+    const base =
+      process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
+      'http://localhost:8000';
+    return path.replace('http://localhost', base);
   }
-  
-  // Remove leading slash if present
-  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-  
-  // Return full URL with backend base URL
-  const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-  return `${baseURL}/${cleanPath}`;
+
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  const base =
+    process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
+    'http://localhost:8000';
+
+  return `${base}/${cleanPath}`;
 };
