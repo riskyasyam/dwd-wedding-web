@@ -21,7 +21,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "DWD Wedding Organizer",
+  title: "DWD Decorations",
   description: "Professional Wedding Organizer Services",
 };
 
